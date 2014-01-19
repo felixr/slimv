@@ -540,8 +540,8 @@ def swank_parse_list_threads(tl):
     buf = vim.current.buffer
     buf[:] = ['Threads in pid '+pid, '--------------------']
     vim.command('call SlimvHelp(2)')
-    buf.append(['', 'Idx  ID    Status                 Name                   Priority', \
-                    '---- ----  --------------------   --------------------   ---------'])
+    buf.append(['', 'Idx  ID      Status         Name                           Priority', \
+                    '---- ------  ------------   ----------------------------   ---------'])
     vim.command('normal! G0')
     lst = tl[1]
     headers = lst.pop(0)
@@ -551,7 +551,17 @@ def swank_parse_list_threads(tl):
         priority = ''
         if len(t) > 3:
             priority = unquote(t[3])
-        buf.append(["%3d:  %3d  %-22s %-22s %s" % (idx, int(t[0]), unquote(t[2]), unquote(t[1]), priority)])
+
+        # t is a tuple of: 
+        # (:id :name :state :at-breakpoint? :suspended? :suspends) 
+        try:
+            id = "%5d" % int(t[0])
+        except ValueError:
+            id = " "*5 
+
+        state = unquote(t[2])
+        name = unquote(t[1])
+        buf.append(["%3d:  %s  %-15s %-29s %s" % (idx, id, state, name, priority)])
         idx = idx + 1
     vim.command('normal! j')
     vim.command('call SlimvEndUpdate()')
