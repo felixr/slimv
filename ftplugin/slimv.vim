@@ -1246,7 +1246,8 @@ function! SlimvConnectSwank()
             return 0
         endif
         python import vim
-        execute 'pyfile ' . g:swank_path
+        " execute 'pyfile ' . g:swank_path
+        execute 'python from swank import *'
         let s:python_initialized = 1
     endif
 
