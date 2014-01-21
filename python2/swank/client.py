@@ -185,10 +185,7 @@ class SwankSocket(object):
                     message = r[0].lower()
                     if self.debug:
                         print 'Message:', message
-                retval = self.handle_return_message(message, r, r_id)
-                if retval is None:
-                    retval = ''
-                    break
+                retval = self.handle_return_message(retval, message, r, r_id)
         if retval != '':
             self.empty_last_line = (retval[-1] == '\n')
         return retval
@@ -207,8 +204,7 @@ class SwankSocket(object):
         else:
             return self.prompt + '> '
 
-    def handle_return_message(self, message, r, r_id):
-        retval = ''
+    def handle_return_message(self, retval, message, r, r_id):
         if message == ':open-dedicated-output-stream':
             self.output_port = int( r[1].lower(), 10 )
             if self.debug:
@@ -220,16 +216,17 @@ class SwankSocket(object):
             retval = retval + self.new_line(retval)
 
         elif message == ':write-string':
+            logprint(self.logfile, "\t:write-string")
             # REPL has new output to display
             retval = retval + unquote(r[1])
             add_prompt = True
             for k,a in self.actions.items():
                 if a.pending and a.name.find('eval'):
                     add_prompt = False
-                    return 
-                    # break
+                    break
             if add_prompt:
                 retval = retval + self.new_line(retval) + self.get_prompt()
+            logprint(self.logfile, "\t:write-string %s" % retval)
 
         elif message == ':read-string':
             # REPL requests entering a string
@@ -412,6 +409,7 @@ class SwankSocket(object):
         elif message == ':ping':
             [thread, tag] = r[1:3]
             self.send('(:emacs-pong ' + thread + ' ' + tag + ')')
+        return retval
 
     def output(self, echo):
         # global debug_active
