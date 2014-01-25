@@ -40,7 +40,7 @@ class SwankSocket(object):
         self.pid             = '0'           # Process id
         self.prompt          = 'SLIMV'       # Command prompt
         self.read_string     = None          # Thread and tag in Swank read string mode
-        self.recv_timeout    = 0.001         # socket recv timeout in seconds
+        self.recv_timeout    = 0.5         # socket recv timeout in seconds
         self.sock            = None          # Swank socket object
         self.use_unicode     = True          # Use unicode message length counting
 
@@ -65,9 +65,9 @@ class SwankSocket(object):
 
 
     def send(self, text):
-        if self.log:
-            logtime(self.logfile,'[---Sent---]')
-            logprint(self.logfile,text)
+        # if self.log:
+        logtime(self.logfile,'[---Sent---]')
+        logprint(self.logfile,text)
         l = "%06x" % unicode_len(text, self.use_unicode)
         t = l + text
         if self.debug:
@@ -158,13 +158,13 @@ class SwankSocket(object):
     def listen(self):
         retval = ''
         msgcount = 0
-        #logtime(self.logfile,'[- Listen--]')
+        # logtime(self.logfile,'[- Listen--]')
         timeout = self.recv_timeout
         while msgcount < self.maxmessages:
             rec = self.recv_len(timeout)
             if rec == '':
                 break
-            timeout = 0.0
+            # timeout = 0.0
             msgcount = msgcount + 1
             if self.debug:
                 print 'swank_recv_len received', rec
@@ -256,9 +256,10 @@ class SwankSocket(object):
                 action.pending = False
             else:
                 action = None
-            if self.log:
+            # if self.log:
+            if True:
                 logtime(self.logfile,'[Actionlist]')
-                for k,a in sorted(actions.items()):
+                for k,a in sorted(self.actions.items()):
                     if a.pending:
                         pending = 'pending '
                     else:
@@ -281,7 +282,7 @@ class SwankSocket(object):
                         pass
                     elif element == 'nil' and action and action.name == ':inspector-pop':
                         # Quit inspector
-                        vim.command('call SlimvQuitInspect(0)')
+                        vim.command('call slimv#inspect#quit(0)')
                     elif element != 'nil' and action and action.name in to_nodisp:
                         # Do not display output, just store it in actions
                         action.result = unquote(params)
@@ -412,13 +413,10 @@ class SwankSocket(object):
         return retval
 
     def output(self, echo):
-        # global debug_active
-        # global debug_activated
-
         if not self.sock:
             return "SWANK server is not connected."
         count = 0
-        #logtime(self.logfile,'[- Output--]')
+        logtime(self.logfile,'[- Output--]')
         self.debug_activated = False
         result = self.listen()
         pending = self.actions_pending()
@@ -428,7 +426,7 @@ class SwankSocket(object):
             count = count + 1
         if echo and result != '':
             # Append SWANK output to REPL buffer
-            vim.command('call SlimvOpenReplBuffer()')
+            vim.command('call slimv#repl#open()')
             buf = vim.current.buffer
             lines = result.split("\n")
             if lines[0] != '':
@@ -438,11 +436,11 @@ class SwankSocket(object):
             if len(lines) > 1:
                 # Append all subsequent lines
                 buf.append(lines[1:])
-            vim.command('call SlimvEndUpdateRepl()')
+            vim.command('call slimv#repl#endUpdate()')
         if self.debug_activated and self.debug_active:
             # Debugger was activated in this run
-            vim.command('call SlimvOpenSldbBuffer()')
-            vim.command('call SlimvEndUpdate()')
+            vim.command('call slimv#openSldbBuffer()')
+            vim.command('call slimv#endUpdate()')
             vim.command("call search('^Restarts:', 'w')")
 
     def actions_pending(self):
@@ -464,7 +462,7 @@ class SwankSocket(object):
         self.rex(':connection-info', '(swank:connection-info)', 'nil', 't')
 
     def response(self,name):
-        #logtime(self.logfile,'[-Response-]')
+        logtime(self.logfile,'[-Response-]')
         for k,a in sorted(self.actions.items()):
             if not a.pending and (name == '' or name == a.name):
                 vc = ":let s:swank_action='" + a.name + "'"

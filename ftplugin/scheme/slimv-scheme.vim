@@ -63,7 +63,7 @@ function! b:SlimvInitRepl()
 endfunction
 
 " Lookup symbol in the Hyperspec
-function! b:SlimvHyperspecLookup( word, exact, all )
+function! b:slimv#hyperspecLookup( word, exact, all )
     " No Hyperspec support for Scheme at the moment
     let symbol = []
     return symbol
@@ -84,7 +84,7 @@ let g:slimv_balloon = 0
 let g:slimv_simple_compl = 1
 
 " Must be called for each lisp buffer
-call SlimvInitBuffer()
+call slimv#initBuffer()
 
 " Don't load another plugin for this buffer
 let b:did_ftplugin = 1

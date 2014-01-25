@@ -1,4 +1,4 @@
-
+# vim: sw=4 et :
 ###############################################################################
 #
 # SWANK client for Slimv
@@ -81,7 +81,7 @@ def swank_parse_inspect_content(pcont):
     else:
         # No ore entries left
         vim.command("let b:inspect_more=0")
-    vim.command('call SlimvEndUpdate()')
+    vim.command('call slimv#endUpdate()')
 
 def swank_parse_inspect(struct):
     """
@@ -90,25 +90,25 @@ def swank_parse_inspect(struct):
     global inspect_lines
     global inspect_newline
 
-    vim.command('call SlimvOpenInspectBuffer()')
+    vim.command('call slimv#inspect#open()')
     vim.command('setlocal modifiable')
     buf = vim.current.buffer
     title = parse_plist(struct, ':title')
     vim.command('let b:inspect_title="' + title + '"')
     buf[:] = ['Inspecting ' + title, '--------------------', '']
     vim.command('normal! 3G0')
-    vim.command('call SlimvHelp(2)')
+    vim.command('call slimv#help(2)')
     pcont = parse_plist(struct, ':content')
     inspect_lines = 3
     inspect_newline = True
     swank_parse_inspect_content(pcont)
-    vim.command('call SlimvSetInspectPos("' + title + '")')
+    vim.command('call slimv#inspect#setPos("' + title + '")')
 
 def swank_parse_debug(struct):
     """
     Parse the SLDB output
     """
-    vim.command('call SlimvOpenSldbBuffer()')
+    vim.command('call slimv#openSldbBuffer()')
     vim.command('setlocal modifiable')
     buf = vim.current.buffer
     [thread, level, condition, restarts, frames, conts] = struct[1:7]
@@ -126,7 +126,7 @@ def swank_parse_debug(struct):
         ftext = ftext.replace('\n', '')
         ftext = ftext.replace('\\\\n', '')
         buf.append([frame.rjust(3) + ': ' + ftext])
-    vim.command('call SlimvEndUpdate()')
+    vim.command('call slimv#endUpdate()')
     vim.command("call search('^Restarts:', 'w')")
     vim.command('stopinsert')
     # This text will be printed into the REPL buffer
@@ -190,11 +190,11 @@ def swank_parse_compile(struct):
     return buf
 
 def swank_parse_list_breakpoints(tl):
-    vim.command('call SlimvOpenBuffer("BREAKPOINTS")')
+    vim.command('call slimv#buffer#open("BREAKPOINTS")')
     vim.command('setlocal modifiable')
     buf = vim.current.buffer
     # buf[:] = ['Threads in pid '+pid, '--------------------']
-    # vim.command('call SlimvHelp(2)')
+    # vim.command('call slimv#help(2)')
     # buf.append(['', 'Idx  ID      Status         Name                           Priority', \
     #                 '---- ------  ------------   ----------------------------   ---------'])
     vim.command('normal! G0')
@@ -210,15 +210,15 @@ def swank_parse_list_breakpoints(tl):
         buf.append(["%3d:  %s %s %s %s" % (idx, t[0], t[1], t[2], t[3])])
         idx = idx + 1
     vim.command('normal! j')
-    vim.command('call SlimvEndUpdate()')
+    vim.command('call slimv#endUpdate()')
 
 
 def swank_parse_list_threads(tl):
-    vim.command('call SlimvOpenThreadsBuffer()')
+    vim.command('call slimv#openThreadsBuffer()')
     vim.command('setlocal modifiable')
     buf = vim.current.buffer
     buf[:] = ['Threads in pid '+pid, '--------------------']
-    vim.command('call SlimvHelp(2)')
+    vim.command('call slimv#help(2)')
     buf.append(['', 'Idx  ID      Status         Name                           Priority', \
                     '---- ------  ------------   ----------------------------   ---------'])
     vim.command('normal! G0')
@@ -243,13 +243,13 @@ def swank_parse_list_threads(tl):
         buf.append(["%3d:  %s  %-15s %-29s %s" % (idx, id, state, name, priority)])
         idx = idx + 1
     vim.command('normal! j')
-    vim.command('call SlimvEndUpdate()')
+    vim.command('call slimv#endUpdate()')
 
 def swank_parse_frame_call(struct, action):
     """
     Parse frame call output
     """
-    vim.command('call SlimvGotoFrame(' + action.data + ')')
+    vim.command('call slimv#gotoFrame(' + action.data + ')')
     vim.command('setlocal modifiable')
     buf = vim.current.buffer
     win = vim.current.window
@@ -258,7 +258,7 @@ def swank_parse_frame_call(struct, action):
         buf[line:line] = [struct[1][1]]
     else:
         buf[line:line] = ['No frame call information']
-    vim.command('call SlimvEndUpdate()')
+    vim.command('call slimv#endUpdate()')
 
 def swank_parse_frame_source(struct, action):
     """
@@ -266,7 +266,7 @@ def swank_parse_frame_source(struct, action):
     http://comments.gmane.org/gmane.lisp.slime.devel/9961 ;-(
     'Well, let's say a missing feature: source locations are currently not available for code loaded as source.'
     """
-    vim.command('call SlimvGotoFrame(' + action.data + ')')
+    vim.command('call slimv#gotoFrame(' + action.data + ')')
     vim.command('setlocal modifiable')
     buf = vim.current.buffer
     win = vim.current.window
@@ -293,14 +293,14 @@ def swank_parse_frame_source(struct, action):
             buf[line:line] = slines
     else:
         buf[line:line] = ['      No source line information']
-    vim.command('call SlimvEndUpdate()')
+    vim.command('call slimv#endUpdate()')
 
 def swank_parse_locals(struct, action):
     """
     Parse frame locals output
     """
     frame_num = action.data
-    vim.command('call SlimvGotoFrame(' + frame_num + ')')
+    vim.command('call slimv#gotoFrame(' + frame_num + ')')
     vim.command('setlocal modifiable')
     buf = vim.current.buffer
     win = vim.current.window
@@ -319,7 +319,7 @@ def swank_parse_locals(struct, action):
     else:
         lines = '    No locals'
     buf[line:line] = lines.split("\n")
-    vim.command('call SlimvEndUpdate()')
+    vim.command('call slimv#endUpdate()')
 
 
 ###############################################################################
@@ -570,12 +570,6 @@ def swank_connect(host, port, resultvar):
 def swank_disconnect():
     return swank.disconnect()
 
-def swank_output(self):
-    swank.output()
-
-def swank_response(name):
-    swank.response(name)
-
 def swank_input(formvar):
     swank.empty_last_line = True
     form = vim.eval(formvar)
@@ -592,9 +586,3 @@ def swank_input(formvar):
     else:
         # Normal s-expression evaluation
         swank_eval(form)
-
-def swank_response(name):
-    swank.response(name)
-
-def swank_output(echo):
-    swank.output(echo)

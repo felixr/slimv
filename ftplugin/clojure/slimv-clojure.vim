@@ -153,10 +153,10 @@ function! b:SlimvHyperspecLookup( word, exact, all )
 
     let symbol = []
     if exists( 'g:slimv_cljapi_db' )
-        let symbol = SlimvFindSymbol( a:word, a:exact, a:all, g:slimv_cljapi_db,  g:slimv_cljapi_root,  symbol )
+        let symbol = slimv#findSymbol( a:word, a:exact, a:all, g:slimv_cljapi_db,  g:slimv_cljapi_root,  symbol )
     endif
     if exists( 'g:slimv_javadoc_db' )
-        let symbol = SlimvFindSymbol( a:word, a:exact, a:all, g:slimv_javadoc_db, g:slimv_javadoc_root, symbol )
+        let symbol = slimv#findSymbol( a:word, a:exact, a:all, g:slimv_javadoc_db, g:slimv_javadoc_root, symbol )
     endif
     if exists( 'g:slimv_cljapi_user_db' )
         " Give a choice for the user to extend the symbol database
@@ -165,7 +165,7 @@ function! b:SlimvHyperspecLookup( word, exact, all )
         else
             let user_root = ''
         endif
-        let symbol = SlimvFindSymbol( a:word, a:exact, a:all, g:slimv_cljapi_user_db, user_root, symbol )
+        let symbol = slimv#findSymbol( a:word, a:exact, a:all, g:slimv_cljapi_user_db, user_root, symbol )
     endif
     return symbol
 endfunction
@@ -174,11 +174,11 @@ endfunction
 function! b:SlimvReplInit( lisp_version )
     " Import functions commonly used in REPL but not present when not running in repl mode
     if a:lisp_version[0:2] >= '1.3'
-        call SlimvSendSilent( ["(use '[clojure.repl :only (source apropos dir pst doc find-doc)])",
+        call slimv#sendSilent( ["(use '[clojure.repl :only (source apropos dir pst doc find-doc)])",
         \                      "(use '[clojure.java.javadoc :only (javadoc)])",
         \                      "(use '[clojure.pprint :only (pp pprint)])"] )
     elseif a:lisp_version[0:2] >= '1.2'
-        call SlimvSendSilent( ["(use '[clojure.repl :only (source apropos)])",
+        call slimv#sendSilent( ["(use '[clojure.repl :only (source apropos)])",
         \                      "(use '[clojure.java.javadoc :only (javadoc)])",
         \                      "(use '[clojure.pprint :only (pp pprint)])"] )
     endif
@@ -193,7 +193,7 @@ endif "!exists( 'g:slimv_clojure_loaded' )
 runtime ftplugin/**/lisp.vim
 
 " Must be called for each lisp buffer
-call SlimvInitBuffer()
+call slimv#initBuffer()
 
 " Don't initiate Slimv again for this buffer
 let b:slimv_did_ftplugin = 1

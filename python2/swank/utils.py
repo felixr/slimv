@@ -42,7 +42,7 @@ def logprint(logfile, text):
     f.close()
 
 def logtime(logfile, text):
-    logprint(logfile, text + ' ' + str(time.clock()))
+    logprint(logfile, text + ' ' + str(time.time() % 1000))
 
 
 def parse_plist(lst, keyword):

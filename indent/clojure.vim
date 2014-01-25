@@ -19,5 +19,5 @@ runtime indent/**/lisp.vim
 setlocal nolisp
 setlocal autoindent
 setlocal expandtab
-setlocal indentexpr=SlimvIndent(v:lnum)
+setlocal indentexpr=slimv#indent(v:lnum)
 

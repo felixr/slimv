@@ -19,5 +19,5 @@ let b:did_indent = 1
 setlocal nolisp
 setlocal autoindent
 setlocal expandtab
-setlocal indentexpr=SlimvIndent(v:lnum)
+setlocal indentexpr=slimv#indent(v:lnum)
 

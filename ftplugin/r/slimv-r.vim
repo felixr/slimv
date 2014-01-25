@@ -40,7 +40,7 @@ function! b:SlimvInitRepl()
 endfunction
 
 " Lookup symbol in the list of Lisp Hyperspec symbol databases
-function! b:SlimvHyperspecLookup( word, exact, all )
+function! b:slimv#hyperspecLookup( word, exact, all )
     return [ a:word ]
 endfunction
 
@@ -53,7 +53,7 @@ endif "!exists( 'g:slimv_lisp_loaded' )
 "runtime ftplugin/**/r.vim
 
 " Must be called for each lisp buffer
-call SlimvInitBuffer()
+call slimv#initBuffer()
 
 " Don't load another plugin for this buffer
 let b:did_ftplugin = 1
