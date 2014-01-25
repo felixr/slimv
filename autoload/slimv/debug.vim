@@ -1,13 +1,14 @@
 " Select a specific restart in debugger
 function! slimv#debug#command( name, cmd )
+    let ctx = slimv#context()
     if slimv#connectSwank()
-        if s:sldb_level >= 0
+        if ctx.sldb_level >= 0
             if bufname('%') != g:slimv_sldb_name
                 call slimv#openSldbBuffer()
             endif
             call slimv#command( 'python ' . a:cmd . '()' )
             call slimv#repl#refresh()
-            if s:sldb_level < 0
+            if ctx.sldb_level < 0
                 " Swank exited the debugger
                 if bufname('%') != g:slimv_sldb_name
                     call slimv#openSldbBuffer()
@@ -38,7 +39,7 @@ endfunction
 
 " Restart execution of the frame with the same arguments
 function! slimv#debug#restartFrame()
-    let frame = s:DebugFrame()
+    let frame = slimv#debug#frame()
     if frame != ''
         call slimv#command( 'python swank_restart_frame("' . frame . '")' )
         call slimv#repl#refresh()
@@ -58,3 +59,26 @@ function! slimv#debug#thread()
     endif
 endfunction
 
+" Return frame number if we are in the Backtrace section of the debugger
+function! slimv#debug#frame()
+    let ctx = slimv#context()
+    if ctx.swank_connected && ctx.sldb_level >= 0
+        " Check if we are in SLDB
+        let sldb_buf = bufnr( '^' . g:slimv_sldb_name . '$' )
+        if sldb_buf != -1 && sldb_buf == bufnr( "%" )
+            let bcktrpos = search( '^Backtrace:', 'bcnw' )
+            let framepos = line( '.' )
+            if matchstr( getline('.'), ctx.frame_def ) == ''
+                let framepos = search( ctx.frame_def, 'bcnw' )
+            endif
+            if framepos > 0 && bcktrpos > 0 && framepos > bcktrpos
+                let line = getline( framepos )
+                let item = matchstr( line, ctx.frame_def )
+                if item != ''
+                    return substitute( item, '\s\|:', '', 'g' )
+                endif
+            endif
+        endif
+    endif
+    return ''
+endfunction

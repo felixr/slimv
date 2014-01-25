@@ -9,10 +9,11 @@ function! s:SplitView( filename )
             let winnr1 = winnr
         endif
     endfor
+    let ctx = slimv#context()
     if winnr1 > 0 && winnr2 > 0
         " We have already at least two windows used by slimv
         let winid = getwinvar( winnr(), 'id' )
-        if bufnr("%") == s:current_buf && winid == s:current_win
+        if bufnr("%") == ctx.current_buf && winid == ctx.current_win
             " Keep the current window on screen, use the other window for the new buffer
             if winnr1 != winnr()
                 execute winnr1 . "wincmd w"

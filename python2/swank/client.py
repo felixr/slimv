@@ -5,6 +5,7 @@ from utils import logtime, logprint, unicode_len, unquote, make_keys
 
 from sexpr import parse_sexpr
 
+from parse import *
 
 class SwankAction:
     def __init__ (self, id, name, data):
@@ -40,7 +41,7 @@ class SwankSocket(object):
         self.pid             = '0'           # Process id
         self.prompt          = 'SLIMV'       # Command prompt
         self.read_string     = None          # Thread and tag in Swank read string mode
-        self.recv_timeout    = 0.5         # socket recv timeout in seconds
+        self.recv_timeout    = 0.001         # socket recv timeout in seconds
         self.sock            = None          # Swank socket object
         self.use_unicode     = True          # Use unicode message length counting
 
@@ -75,7 +76,8 @@ class SwankSocket(object):
         try:
             self.sock.send(t)
         except socket.error:
-            vim.command("let s:ctx.swank_result='Socket error when sending to SWANK server.\n'")
+            vim.command('let ctx=slimv#context()')
+            vim.command("let ctx.swank_result='Socket error when sending to SWANK server.\n'")
             self.disconnect()
 
     def disconnect(self):
@@ -87,8 +89,9 @@ class SwankSocket(object):
             self.sock.close()
         finally:
             self.sock = None
-            vim.command('let s:ctx.swank_connected = 0')
-            vim.command("let s:ctx.swank_result='Connection to SWANK server is closed.\n'")
+            vim.command('let ctx=slimv#context()')
+            vim.command('let ctx.swank_connected = 0')
+            vim.command("let ctx.swank_result='Connection to SWANK server is closed.\n'")
 
     def recv_len(self, timeout):
         rec = ''
@@ -100,7 +103,8 @@ class SwankSocket(object):
             try:
                 data = self.sock.recv(l)
             except socket.error:
-                vim.command("let s:ctx.swank_result='Socket error when receiving from SWANK server.\n'")
+                vim.command('let ctx=slimv#context()')
+                vim.command("let ctx.swank_result='Socket error when receiving from SWANK server.\n'")
                 self.disconnect()
                 return rec
             while data and len(rec) < self.lenbytes:
@@ -110,7 +114,8 @@ class SwankSocket(object):
                     try:
                         data = self.sock.recv(l)
                     except socket.error:
-                        vim.command("let s:ctx.swank_result='Socket error when receiving from SWANK server.\n'")
+                        vim.command('let ctx=slimv#context()')
+                        vim.command("let ctx.swank_result='Socket error when receiving from SWANK server.\n'")
                         self.disconnect()
                         return rec
         return rec
@@ -135,11 +140,13 @@ class SwankSocket(object):
                     try:
                         data = self.sock.recv(needed)
                     except socket.error:
-                        vim.command("let s:ctx.swank_result='Socket error when receiving from SWANK server.\n'")
+                        vim.command("let ctx=slimv#context()")
+                        vim.command("let ctx.swank_result='Socket error when receiving from SWANK server.\n'")
                         self.disconnect()
                         return rec
                     if len(data) == 0:
-                        vim.command("let s:ctx.swank_result='Socket error when receiving from SWANK server.\n'")
+                        vim.command("let ctx=slimv#context()")
+                        vim.command("let ctx.swank_result='Socket error when receiving from SWANK server.\n'")
                         self.disconnect()
                         return rec
                     rec = rec + data
@@ -205,6 +212,7 @@ class SwankSocket(object):
             return self.prompt + '> '
 
     def handle_return_message(self, retval, message, r, r_id):
+        vim.command("let ctx=slimv#context()")
         if message == ':open-dedicated-output-stream':
             self.output_port = int( r[1].lower(), 10 )
             if self.debug:
@@ -235,7 +243,7 @@ class SwankSocket(object):
         elif message == ':read-from-minibuffer':
             # REPL requests entering a string in the command line
             self.read_string = r[1:3]
-            vim.command("let s:input_prompt='%s'" % unquote(r[3]).replace("'", "''"))
+            vim.command("let ctx.input_prompt='%s'" % unquote(r[3]).replace("'", "''"))
 
         elif message == ':indentation-update':
             for el in r[1]:
@@ -322,11 +330,11 @@ class SwankSocket(object):
                         pkg = make_keys( conn_info[':package'] )
                         self.package = pkg[':name']
                         self.prompt = pkg[':prompt']
-                        vim.command('let s:ctx.swank_version="' + ver + '"')
+                        vim.command('let ctx.swank_version="' + ver + '"')
                         if ver >= '2011-11-08':
                             # Recent swank servers count bytes instead of unicode characters
                             self.use_unicode = False
-                        vim.command('let s:lisp_version="' + imp[':version'] + '"')
+                        vim.command('let ctx.lisp_version="' + imp[':version'] + '"')
                         retval = retval + self.new_line(retval)
                         retval = retval + imp[':type'] + ' ' + imp[':version'] + '  Port: ' + str(self.input_port) + '  Pid: ' + pid + '\n; SWANK ' + ver
                         retval = retval + '\n' + self.get_prompt()
@@ -349,7 +357,7 @@ class SwankSocket(object):
                                 compl = "\n".join(map(lambda x: x[0], params[0]))
                                 retval = retval + compl.replace('"', '')
                         elif action.name == ':list-threads':
-                            swank_parse_list_threads(r[1])
+                            swank_parse_list_threads(self, r[1])
                         elif action.name == ':list-breakpoints':
                             swank_parse_list_breakpoints(r[1])
                         elif action.name == ':xref':
@@ -369,7 +377,7 @@ class SwankSocket(object):
                         elif action.name == ':frame-source-location':
                             swank_parse_frame_source(params, action)
                         elif action.name == ':frame-locals-and-catch-tags':
-                            swank_parse_locals(params[0], action)
+                            swank_parse_locals(self, params[0], action)
                         elif action.name == ':profiled-functions':
                             retval = retval + '\n' + 'Profiled functions:\n'
                             for f in params:
@@ -382,7 +390,8 @@ class SwankSocket(object):
 
             elif result == ':abort':
                 self.debug_active = False
-                vim.command('let s:ctx.sldb_level=-1')
+                vim.command('let ctx=slimv#context()')
+                vim.command('let ctx.sldb_level=-1')
                 if len(r[1]) > 1:
                     retval = retval + '; Evaluation aborted on ' + unquote(r[1][1]).replace('\n', '\n;') + '\n' + self.get_prompt()
                 else:
@@ -475,3 +484,52 @@ class SwankSocket(object):
         vc = ":let s:ctx.swank_result=''"
         vim.command(vc)
         self.actions_pending()
+
+def swank_parse_compile(struct):
+    """
+    Parse compiler output
+    """
+    buf = ''
+    warnings = struct[1]
+    time = struct[3]
+    filename = ''
+    if len(struct) > 5:
+        filename = struct[5]
+    if filename == '' or filename[0] != '"':
+        filename = '"' + filename + '"'
+    vim.command('let s:ctx.compiled_file=' + filename + '')
+    vim.command("let qflist = []")
+    if type(warnings) == list:
+        buf = '\n' + str(len(warnings)) + ' compiler notes:\n\n'
+        for w in warnings:
+            msg      = parse_plist(w, ':message')
+            severity = parse_plist(w, ':severity')
+            if severity[0] == ':':
+                severity = severity[1:]
+            location = parse_plist(w, ':location')
+            if location[0] == ':error':
+                # "no error location available"
+                buf = buf + '  ' + unquote(location[1]) + '\n'
+                buf = buf + '  ' + severity + ': ' + msg + '\n\n'
+            else:
+                fname   = unquote(location[1][1])
+                pos     = location[2][1]
+                if location[3] != 'nil':
+                    snippet = unquote(location[3][1]).replace('\r', '')
+                    buf = buf + snippet + '\n'
+                buf = buf + fname + ':' + pos + '\n'
+                buf = buf + '  ' + severity + ': ' + msg + '\n\n' 
+                if location[2][0] == ':line':
+                    lnum = pos
+                    cnum = 1
+                else:
+                    [lnum, cnum] = parse_filepos(fname, int(pos))
+                msg = msg.replace("'", "' . \"'\" . '")
+                qfentry = "{'filename':'"+fname+"','lnum':'"+str(lnum)+"','col':'"+str(cnum)+"','text':'"+msg+"'}"
+                logprint(qfentry)
+                vim.command("call add(qflist, " + qfentry + ")")
+    else:
+        buf = '\nCompilation finished. (No warnings)  [' + time + ' secs]\n\n'
+    vim.command("call setqflist(qflist)")
+    return buf
+

@@ -14,9 +14,12 @@ if exists("b:slimv_did_ftplugin") || exists("g:slimv_disable_clojure")
     finish
 endif
 
+
 " ---------- Begin part loaded once ----------
 if !exists( 'g:slimv_clojure_loaded' )
 
+
+let g:slimv_template_apropos = '(clojure.repl/apropos "%1")'
 let g:slimv_clojure_loaded = 1
 
 " Transform filename so that it will not contain spaces
@@ -198,3 +201,70 @@ call slimv#initBuffer()
 " Don't initiate Slimv again for this buffer
 let b:slimv_did_ftplugin = 1
 
+" noremap <silent> <Tab> <Ins><C-X><C-O>
+
+nnoremap [slimv] <Nop>
+nmap \ [slimv]
+
+noremap <silent> [slimv]) :<C-U>call slimv#closeForm()<CR>
+
+" Evaluation commands
+map <silent> [slimv]d :<C-U>call slimv#eval#defun()<CR>
+map <silent> [slimv]e :<C-U>call slimv#eval#exp()<CR>
+map <silent> [slimv]r :call slimv#eval#region()<CR>
+map <silent> [slimv]b :<C-U>call slimv#eval#buffer()<CR>
+map <silent> [slimv]v :call slimv#eval#interactive()<CR>
+map <silent> [slimv]u :call slimv#undefineFunction()<CR>
+
+" Debug commands
+map <silent> [slimv]1 :<C-U>call slimv#macroexpand()<CR>
+map <silent> [slimv]m :<C-U>call slimv#macroexpandAll()<CR>
+map <silent> [slimv]t :call slimv#trace()<CR>
+map <silent> [slimv]T :call slimv#untrace()<CR>
+map <silent> [slimv]B :call slimv#break()<CR>
+map <silent> [slimv]E :call slimv#breakOnException()<CR>
+map <silent> [slimv]l :call slimv#disassemble()<CR>
+map <silent> [slimv]i :call slimv#inspect()<CR>
+map <silent> [slimv]a :call slimv#debug#abort()<CR>
+map <silent> [slimv]q :call slimv#debug#quit()<CR>
+map <silent> [slimv]n :call slimv#debug#continue()<CR>
+map <silent> [slimv]N :call slimv#debug#restartFrame()<CR>
+map <silent> [slimv]H :call slimv#listThreads()<CR>
+map <silent> [slimv]K :call slimv#killThread()<CR>
+map <silent> [slimv]G :call slimv#debug#thread()<CR>
+
+" Compile commands
+map <silent> [slimv]D :<C-U>call slimv#compileDefun()<CR>
+map <silent> [slimv]L :<C-U>call slimv#compileLoadFile()<CR>
+map <silent> [slimv]F :<C-U>call slimv#compileFile()<CR>
+map <silent> [slimv]R :call slimv#compileRegion()<CR>
+
+" Xref commands
+map <silent> [slimv]xc :call slimv#xrefCalls()<CR>
+map <silent> [slimv]xr :call slimv#xrefReferences()<CR>
+map <silent> [slimv]xs :call slimv#xrefSets()<CR>
+map <silent> [slimv]xb :call slimv#xrefBinds()<CR>
+map <silent> [slimv]xm :call slimv#xrefMacroexpands()<CR>
+map <silent> [slimv]xp :call slimv#xrefSpecializes()<CR>
+map <silent> [slimv]xl :call slimv#xrefCallers()<CR>
+map <silent> [slimv]xe :call slimv#xrefCallees()<CR>
+
+" Profile commands
+map <silent> [slimv]p :<C-U>call slimv#profile()<CR>
+map <silent> [slimv]P :<C-U>call slimv#profileSubstring()<CR>
+map <silent> [slimv]U :<C-U>call slimv#unprofileAll()<CR>
+map <silent> [slimv]? :<C-U>call slimv#showProfiled()<CR>
+map <silent> [slimv]o :<C-U>call slimv#profileReport()<CR>
+map <silent> [slimv]X :<C-U>call slimv#profileReset()<CR>
+
+" Documentation commands
+map <silent> [slimv]s :call slimv#describeSymbol()<CR>
+map <silent> [slimv]A :call slimv#apropos()<CR>
+map <silent> [slimv]h :call slimv#hyperspec()<CR>
+map <silent> [slimv]] :call slimv#generateTags()<CR>
+
+" REPL commands
+map <silent> [slimv]c :call slimv#connectServer()<CR>
+map <silent> [slimv]g :call slimv#setPackage()<CR>
+map <silent> [slimv]y :call slimv#interrupt()<CR>
+map <silent> [slimv]- :call slimv#repl#clear()<CR>

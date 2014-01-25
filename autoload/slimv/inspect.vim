@@ -1,7 +1,7 @@
 
 " Open a new Inspect buffer
 function slimv#inspect#open()
-    call SlimvOpenBuffer( g:slimv_inspect_name )
+    call slimv#buffer#open(g:slimv_inspect_name )
     let b:range_start = 0
     let b:range_end   = 0
     let b:help = slimv#inspect#help()

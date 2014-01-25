@@ -63,7 +63,7 @@ function! b:SlimvInitRepl()
 endfunction
 
 " Lookup symbol in the Hyperspec
-function! b:slimv#hyperspecLookup( word, exact, all )
+function! b:SlimvHyperspecLookup( word, exact, all )
     " No Hyperspec support for Scheme at the moment
     let symbol = []
     return symbol

@@ -120,28 +120,6 @@ function! slimv#eval#buffer()
     call slimv#eval( lines )
 endfunction
 
-" Return frame number if we are in the Backtrace section of the debugger
-function! s:DebugFrame()
-    if s:swank_connected && s:sldb_level >= 0
-        " Check if we are in SLDB
-        let sldb_buf = bufnr( '^' . g:slimv_sldb_name . '$' )
-        if sldb_buf != -1 && sldb_buf == bufnr( "%" )
-            let bcktrpos = search( '^Backtrace:', 'bcnw' )
-            let framepos = line( '.' )
-            if matchstr( getline('.'), s:frame_def ) == ''
-                let framepos = search( s:frame_def, 'bcnw' )
-            endif
-            if framepos > 0 && bcktrpos > 0 && framepos > bcktrpos
-                let line = getline( framepos )
-                let item = matchstr( line, s:frame_def )
-                if item != ''
-                    return substitute( item, '\s\|:', '', 'g' )
-                endif
-            endif
-        endif
-    endif
-    return ''
-endfunction
 
 " Evaluate and test current s-expression at the cursor pos
 function! slimv#eval#testExp( testform )
@@ -161,8 +139,8 @@ function! slimv#eval#exp()
 endfunction
 
 " Evaluate expression entered interactively
-function! slimv#interactiveEval()
-    let frame = s:DebugFrame()
+function! slimv#eval#interactive()
+    let frame = slimv#debug#frame()
     if frame != ''
         " We are in the debugger, eval expression in the frame the cursor stands on
         let e = input( 'Eval in frame ' . frame . ': ' )

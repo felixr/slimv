@@ -45,12 +45,6 @@ def logtime(logfile, text):
     logprint(logfile, text + ' ' + str(time.time() % 1000))
 
 
-def parse_plist(lst, keyword):
-    for i in range(0, len(lst), 2):
-        if keyword == lst[i]:
-            return unquote(lst[i+1])
-    return ''
-
 def format_filename(fname):
     fname = vim.eval('fnamemodify(' + fname + ', ":~:.")')
     if fname.find(' '):

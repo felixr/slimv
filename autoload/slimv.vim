@@ -24,6 +24,7 @@
 "     \ 'win_id' : 0 }                                          " Counter for generating unique window id
 
 let s:ctx = {
+    \'swank_actions_pending': 0,
     \'indent': '',
     \'last_update': 0,
     \'save_updatetime': &updatetime,
@@ -1813,7 +1814,7 @@ function! slimv#inspect()
         return
     endif
     let s:ctx.inspect_path = []
-    let frame = s:DebugFrame()
+    let frame = slimv#debug#frame()
     if frame != ''
         " Inspect selected for a frame in the debugger's Backtrace section
         let line = getline( '.' )
@@ -2153,10 +2154,10 @@ function! slimv#lookup( word )
     let w = a:word
     let symbol = []
     while symbol == []
-        let symbol = b:slimv#hyperspecLookup( w, 1, 0 )
+        let symbol = b:SlimvHyperspecLookup( w, 1, 0 )
         if symbol == []
             " Symbol not found, try a match on beginning of symbol name
-            let symbol = b:slimv#hyperspecLookup( w, 0, 0 )
+            let symbol = b:SlimvHyperspecLookup( w, 0, 0 )
             if symbol == []
                 " We are out of luck, can't find anything
                 let msg = 'Symbol ' . w . ' not found. Hyperspec lookup word: '
@@ -2255,7 +2256,7 @@ function! slimv#complete( base )
 
     " No completion yet, try to fetch it from the Hyperspec database
     let res = []
-    let symbol = b:slimv#hyperspecLookup( a:base, 0, 1 )
+    let symbol = b:SlimvHyperspecLookup( a:base, 0, 1 )
     if symbol == []
         return []
     endif
@@ -2376,96 +2377,96 @@ function! slimv#initBuffer()
     call slimv#MakeWindowId()
 endfunction
 
-" Edit commands
-call s:MenuMap( 'Slim&v.Edi&t.Close-&Form',                     g:slimv_leader.')',  g:slimv_leader.'tc',  ':<C-U>call slimv#closeForm()<CR>' )
-call s:MenuMap( 'Slim&v.Edi&t.&Complete-Symbol<Tab>Tab',        '',                  '',                   '<Ins><C-X><C-O>' )
+" " Edit commands
+" call s:MenuMap( 'Slim&v.Edi&t.Close-&Form',                     g:slimv_leader.')',  g:slimv_leader.'tc',  ':<C-U>call slimv#closeForm()<CR>' )
+" call s:MenuMap( 'Slim&v.Edi&t.&Complete-Symbol<Tab>Tab',        '',                  '',                   '<Ins><C-X><C-O>' )
 
-if exists( 'g:paredit_loaded' )
-call s:MenuMap( 'Slim&v.Edi&t.&Paredit-Toggle',                 g:slimv_leader.'(',  g:slimv_leader.'(t',  ':<C-U>call PareditToggle()<CR>' )
-call s:MenuMap( 'Slim&v.Edi&t.-PareditSep-',                    '',                  '',                   ':' )
+" if exists( 'g:paredit_loaded' )
+" call s:MenuMap( 'Slim&v.Edi&t.&Paredit-Toggle',                 g:slimv_leader.'(',  g:slimv_leader.'(t',  ':<C-U>call PareditToggle()<CR>' )
+" call s:MenuMap( 'Slim&v.Edi&t.-PareditSep-',                    '',                  '',                   ':' )
 
-if g:paredit_shortmaps
-call s:MenuMap( 'Slim&v.Edi&t.Paredit-&Wrap<Tab>'                             .'W',  '',  '',              ':<C-U>call PareditWrap("(",")")<CR>' )
-call s:MenuMap( 'Slim&v.Edi&t.Paredit-Spli&ce<Tab>'                           .'S',  '',  '',              ':<C-U>call PareditSplice()<CR>' )
-call s:MenuMap( 'Slim&v.Edi&t.Paredit-&Split<Tab>'                            .'O',  '',  '',              ':<C-U>call PareditSplit()<CR>' )
-call s:MenuMap( 'Slim&v.Edi&t.Paredit-&Join<Tab>'                             .'J',  '',  '',              ':<C-U>call PareditJoin()<CR>' )
-call s:MenuMap( 'Slim&v.Edi&t.Paredit-Ra&ise<Tab>'             .g:slimv_leader.'I',  '',  '',              ':<C-U>call PareditRaise()<CR>' )
-call s:MenuMap( 'Slim&v.Edi&t.Paredit-Move&Left<Tab>'                         .'<',  '',  '',              ':<C-U>call PareditMoveLeft()<CR>' )
-call s:MenuMap( 'Slim&v.Edi&t.Paredit-Move&Right<Tab>'                        .'>',  '',  '',              ':<C-U>call PareditMoveRight()<CR>' )
-else
-call s:MenuMap( 'Slim&v.Edi&t.Paredit-&Wrap<Tab>'              .g:slimv_leader.'W',  '',  '',              ':<C-U>call PareditWrap("(",")")<CR>' )
-call s:MenuMap( 'Slim&v.Edi&t.Paredit-Spli&ce<Tab>'            .g:slimv_leader.'S',  '',  '',              ':<C-U>call PareditSplice()<CR>' )
-call s:MenuMap( 'Slim&v.Edi&t.Paredit-&Split<Tab>'             .g:slimv_leader.'O',  '',  '',              ':<C-U>call PareditSplit()<CR>' )
-call s:MenuMap( 'Slim&v.Edi&t.Paredit-&Join<Tab>'              .g:slimv_leader.'J',  '',  '',              ':<C-U>call PareditJoin()<CR>' )
-call s:MenuMap( 'Slim&v.Edi&t.Paredit-Ra&ise<Tab>'             .g:slimv_leader.'I',  '',  '',              ':<C-U>call PareditRaise()<CR>' )
-call s:MenuMap( 'Slim&v.Edi&t.Paredit-Move&Left<Tab>'          .g:slimv_leader.'<',  '',  '',              ':<C-U>call PareditMoveLeft()<CR>' )
-call s:MenuMap( 'Slim&v.Edi&t.Paredit-Move&Right<Tab>'         .g:slimv_leader.'>',  '',  '',              ':<C-U>call PareditMoveRight()<CR>' )
-endif "g:paredit_shortmaps
-endif "g:paredit_loaded
+" if g:paredit_shortmaps
+" call s:MenuMap( 'Slim&v.Edi&t.Paredit-&Wrap<Tab>'                             .'W',  '',  '',              ':<C-U>call PareditWrap("(",")")<CR>' )
+" call s:MenuMap( 'Slim&v.Edi&t.Paredit-Spli&ce<Tab>'                           .'S',  '',  '',              ':<C-U>call PareditSplice()<CR>' )
+" call s:MenuMap( 'Slim&v.Edi&t.Paredit-&Split<Tab>'                            .'O',  '',  '',              ':<C-U>call PareditSplit()<CR>' )
+" call s:MenuMap( 'Slim&v.Edi&t.Paredit-&Join<Tab>'                             .'J',  '',  '',              ':<C-U>call PareditJoin()<CR>' )
+" call s:MenuMap( 'Slim&v.Edi&t.Paredit-Ra&ise<Tab>'             .g:slimv_leader.'I',  '',  '',              ':<C-U>call PareditRaise()<CR>' )
+" call s:MenuMap( 'Slim&v.Edi&t.Paredit-Move&Left<Tab>'                         .'<',  '',  '',              ':<C-U>call PareditMoveLeft()<CR>' )
+" call s:MenuMap( 'Slim&v.Edi&t.Paredit-Move&Right<Tab>'                        .'>',  '',  '',              ':<C-U>call PareditMoveRight()<CR>' )
+" else
+" call s:MenuMap( 'Slim&v.Edi&t.Paredit-&Wrap<Tab>'              .g:slimv_leader.'W',  '',  '',              ':<C-U>call PareditWrap("(",")")<CR>' )
+" call s:MenuMap( 'Slim&v.Edi&t.Paredit-Spli&ce<Tab>'            .g:slimv_leader.'S',  '',  '',              ':<C-U>call PareditSplice()<CR>' )
+" call s:MenuMap( 'Slim&v.Edi&t.Paredit-&Split<Tab>'             .g:slimv_leader.'O',  '',  '',              ':<C-U>call PareditSplit()<CR>' )
+" call s:MenuMap( 'Slim&v.Edi&t.Paredit-&Join<Tab>'              .g:slimv_leader.'J',  '',  '',              ':<C-U>call PareditJoin()<CR>' )
+" call s:MenuMap( 'Slim&v.Edi&t.Paredit-Ra&ise<Tab>'             .g:slimv_leader.'I',  '',  '',              ':<C-U>call PareditRaise()<CR>' )
+" call s:MenuMap( 'Slim&v.Edi&t.Paredit-Move&Left<Tab>'          .g:slimv_leader.'<',  '',  '',              ':<C-U>call PareditMoveLeft()<CR>' )
+" call s:MenuMap( 'Slim&v.Edi&t.Paredit-Move&Right<Tab>'         .g:slimv_leader.'>',  '',  '',              ':<C-U>call PareditMoveRight()<CR>' )
+" endif "g:paredit_shortmaps
+" endif "g:paredit_loaded
 
-" Evaluation commands
-call s:MenuMap( 'Slim&v.&Evaluation.Eval-&Defun',               g:slimv_leader.'d',  g:slimv_leader.'ed',  ':<C-U>call slimv#eval#defun()<CR>' )
-call s:MenuMap( 'Slim&v.&Evaluation.Eval-Current-&Exp',         g:slimv_leader.'e',  g:slimv_leader.'ee',  ':<C-U>call slimv#eval#exp()<CR>' )
-call s:MenuMap( 'Slim&v.&Evaluation.Eval-&Region',              g:slimv_leader.'r',  g:slimv_leader.'er',  ':call slimv#eval#region()<CR>' )
-call s:MenuMap( 'Slim&v.&Evaluation.Eval-&Buffer',              g:slimv_leader.'b',  g:slimv_leader.'eb',  ':<C-U>call slimv#eval#buffer()<CR>' )
-call s:MenuMap( 'Slim&v.&Evaluation.Interacti&ve-Eval\.\.\.',   g:slimv_leader.'v',  g:slimv_leader.'ei',  ':call slimv#interactiveEval()<CR>' )
-call s:MenuMap( 'Slim&v.&Evaluation.&Undefine-Function',        g:slimv_leader.'u',  g:slimv_leader.'eu',  ':call slimv#undefineFunction()<CR>' )
+" " Evaluation commands
+" call s:MenuMap( 'Slim&v.&Evaluation.Eval-&Defun',               g:slimv_leader.'d',  g:slimv_leader.'ed',  ':<C-U>call slimv#eval#defun()<CR>' )
+" call s:MenuMap( 'Slim&v.&Evaluation.Eval-Current-&Exp',         g:slimv_leader.'e',  g:slimv_leader.'ee',  ':<C-U>call slimv#eval#exp()<CR>' )
+" call s:MenuMap( 'Slim&v.&Evaluation.Eval-&Region',              g:slimv_leader.'r',  g:slimv_leader.'er',  ':call slimv#eval#region()<CR>' )
+" call s:MenuMap( 'Slim&v.&Evaluation.Eval-&Buffer',              g:slimv_leader.'b',  g:slimv_leader.'eb',  ':<C-U>call slimv#eval#buffer()<CR>' )
+" call s:MenuMap( 'Slim&v.&Evaluation.Interacti&ve-Eval\.\.\.',   g:slimv_leader.'v',  g:slimv_leader.'ei',  ':call slimv#interactiveEval()<CR>' )
+" call s:MenuMap( 'Slim&v.&Evaluation.&Undefine-Function',        g:slimv_leader.'u',  g:slimv_leader.'eu',  ':call slimv#undefineFunction()<CR>' )
 
-" Debug commands
-call s:MenuMap( 'Slim&v.De&bugging.Macroexpand-&1',             g:slimv_leader.'1',  g:slimv_leader.'m1',  ':<C-U>call slimv#macroexpand()<CR>' )
-call s:MenuMap( 'Slim&v.De&bugging.&Macroexpand-All',           g:slimv_leader.'m',  g:slimv_leader.'ma',  ':<C-U>call slimv#macroexpandAll()<CR>' )
-call s:MenuMap( 'Slim&v.De&bugging.Toggle-&Trace\.\.\.',        g:slimv_leader.'t',  g:slimv_leader.'dt',  ':call slimv#trace()<CR>' )
-call s:MenuMap( 'Slim&v.De&bugging.U&ntrace-All',               g:slimv_leader.'T',  g:slimv_leader.'du',  ':call slimv#untrace()<CR>' )
-call s:MenuMap( 'Slim&v.De&bugging.Set-&Breakpoint',            g:slimv_leader.'B',  g:slimv_leader.'db',  ':call slimv#break()<CR>' )
-call s:MenuMap( 'Slim&v.De&bugging.Break-on-&Exception',        g:slimv_leader.'E',  g:slimv_leader.'de',  ':call slimv#breakOnException()<CR>' )
-call s:MenuMap( 'Slim&v.De&bugging.Disassemb&le\.\.\.',         g:slimv_leader.'l',  g:slimv_leader.'dd',  ':call slimv#disassemble()<CR>' )
-call s:MenuMap( 'Slim&v.De&bugging.&Inspect\.\.\.',             g:slimv_leader.'i',  g:slimv_leader.'di',  ':call slimv#inspect()<CR>' )
-call s:MenuMap( 'Slim&v.De&bugging.-SldbSep-',                  '',                  '',                   ':' )
-call s:MenuMap( 'Slim&v.De&bugging.&Abort',                     g:slimv_leader.'a',  g:slimv_leader.'da',  ':call slimv#debug#abort()<CR>' )
-call s:MenuMap( 'Slim&v.De&bugging.&Quit-to-Toplevel',          g:slimv_leader.'q',  g:slimv_leader.'dq',  ':call slimv#debug#quit()<CR>' )
-call s:MenuMap( 'Slim&v.De&bugging.&Continue',                  g:slimv_leader.'n',  g:slimv_leader.'dc',  ':call slimv#debug#continue()<CR>' )
-call s:MenuMap( 'Slim&v.De&bugging.&Restart-Frame',             g:slimv_leader.'N',  g:slimv_leader.'dr',  ':call slimv#debug#restartFrame()<CR>' )
-call s:MenuMap( 'Slim&v.De&bugging.-ThreadSep-',                '',                  '',                   ':' )
-call s:MenuMap( 'Slim&v.De&bugging.List-T&hreads',              g:slimv_leader.'H',  g:slimv_leader.'dl',  ':call slimv#listThreads()<CR>' )
-call s:MenuMap( 'Slim&v.De&bugging.&Kill-Thread\.\.\.',         g:slimv_leader.'K',  g:slimv_leader.'dk',  ':call slimv#killThread()<CR>' )
-call s:MenuMap( 'Slim&v.De&bugging.&Debug-Thread\.\.\.',        g:slimv_leader.'G',  g:slimv_leader.'dT',  ':call slimv#debug#thread()<CR>' )
+" " Debug commands
+" call s:MenuMap( 'Slim&v.De&bugging.Macroexpand-&1',             g:slimv_leader.'1',  g:slimv_leader.'m1',  ':<C-U>call slimv#macroexpand()<CR>' )
+" call s:MenuMap( 'Slim&v.De&bugging.&Macroexpand-All',           g:slimv_leader.'m',  g:slimv_leader.'ma',  ':<C-U>call slimv#macroexpandAll()<CR>' )
+" call s:MenuMap( 'Slim&v.De&bugging.Toggle-&Trace\.\.\.',        g:slimv_leader.'t',  g:slimv_leader.'dt',  ':call slimv#trace()<CR>' )
+" call s:MenuMap( 'Slim&v.De&bugging.U&ntrace-All',               g:slimv_leader.'T',  g:slimv_leader.'du',  ':call slimv#untrace()<CR>' )
+" call s:MenuMap( 'Slim&v.De&bugging.Set-&Breakpoint',            g:slimv_leader.'B',  g:slimv_leader.'db',  ':call slimv#break()<CR>' )
+" call s:MenuMap( 'Slim&v.De&bugging.Break-on-&Exception',        g:slimv_leader.'E',  g:slimv_leader.'de',  ':call slimv#breakOnException()<CR>' )
+" call s:MenuMap( 'Slim&v.De&bugging.Disassemb&le\.\.\.',         g:slimv_leader.'l',  g:slimv_leader.'dd',  ':call slimv#disassemble()<CR>' )
+" call s:MenuMap( 'Slim&v.De&bugging.&Inspect\.\.\.',             g:slimv_leader.'i',  g:slimv_leader.'di',  ':call slimv#inspect()<CR>' )
+" call s:MenuMap( 'Slim&v.De&bugging.-SldbSep-',                  '',                  '',                   ':' )
+" call s:MenuMap( 'Slim&v.De&bugging.&Abort',                     g:slimv_leader.'a',  g:slimv_leader.'da',  ':call slimv#debug#abort()<CR>' )
+" call s:MenuMap( 'Slim&v.De&bugging.&Quit-to-Toplevel',          g:slimv_leader.'q',  g:slimv_leader.'dq',  ':call slimv#debug#quit()<CR>' )
+" call s:MenuMap( 'Slim&v.De&bugging.&Continue',                  g:slimv_leader.'n',  g:slimv_leader.'dc',  ':call slimv#debug#continue()<CR>' )
+" call s:MenuMap( 'Slim&v.De&bugging.&Restart-Frame',             g:slimv_leader.'N',  g:slimv_leader.'dr',  ':call slimv#debug#restartFrame()<CR>' )
+" call s:MenuMap( 'Slim&v.De&bugging.-ThreadSep-',                '',                  '',                   ':' )
+" call s:MenuMap( 'Slim&v.De&bugging.List-T&hreads',              g:slimv_leader.'H',  g:slimv_leader.'dl',  ':call slimv#listThreads()<CR>' )
+" call s:MenuMap( 'Slim&v.De&bugging.&Kill-Thread\.\.\.',         g:slimv_leader.'K',  g:slimv_leader.'dk',  ':call slimv#killThread()<CR>' )
+" call s:MenuMap( 'Slim&v.De&bugging.&Debug-Thread\.\.\.',        g:slimv_leader.'G',  g:slimv_leader.'dT',  ':call slimv#debug#thread()<CR>' )
 
-" Compile commands
-call s:MenuMap( 'Slim&v.&Compilation.Compile-&Defun',           g:slimv_leader.'D',  g:slimv_leader.'cd',  ':<C-U>call slimv#compileDefun()<CR>' )
-call s:MenuMap( 'Slim&v.&Compilation.Compile-&Load-File',       g:slimv_leader.'L',  g:slimv_leader.'cl',  ':<C-U>call slimv#compileLoadFile()<CR>' )
-call s:MenuMap( 'Slim&v.&Compilation.Compile-&File',            g:slimv_leader.'F',  g:slimv_leader.'cf',  ':<C-U>call slimv#compileFile()<CR>' )
-call s:MenuMap( 'Slim&v.&Compilation.Compile-&Region',          g:slimv_leader.'R',  g:slimv_leader.'cr',  ':call slimv#compileRegion()<CR>' )
+" " Compile commands
+" call s:MenuMap( 'Slim&v.&Compilation.Compile-&Defun',           g:slimv_leader.'D',  g:slimv_leader.'cd',  ':<C-U>call slimv#compileDefun()<CR>' )
+" call s:MenuMap( 'Slim&v.&Compilation.Compile-&Load-File',       g:slimv_leader.'L',  g:slimv_leader.'cl',  ':<C-U>call slimv#compileLoadFile()<CR>' )
+" call s:MenuMap( 'Slim&v.&Compilation.Compile-&File',            g:slimv_leader.'F',  g:slimv_leader.'cf',  ':<C-U>call slimv#compileFile()<CR>' )
+" call s:MenuMap( 'Slim&v.&Compilation.Compile-&Region',          g:slimv_leader.'R',  g:slimv_leader.'cr',  ':call slimv#compileRegion()<CR>' )
 
-" Xref commands
-call s:MenuMap( 'Slim&v.&Xref.Who-&Calls',                      g:slimv_leader.'xc', g:slimv_leader.'xc',  ':call slimv#xrefCalls()<CR>' )
-call s:MenuMap( 'Slim&v.&Xref.Who-&References',                 g:slimv_leader.'xr', g:slimv_leader.'xr',  ':call slimv#xrefReferences()<CR>' )
-call s:MenuMap( 'Slim&v.&Xref.Who-&Sets',                       g:slimv_leader.'xs', g:slimv_leader.'xs',  ':call slimv#xrefSets()<CR>' )
-call s:MenuMap( 'Slim&v.&Xref.Who-&Binds',                      g:slimv_leader.'xb', g:slimv_leader.'xb',  ':call slimv#xrefBinds()<CR>' )
-call s:MenuMap( 'Slim&v.&Xref.Who-&Macroexpands',               g:slimv_leader.'xm', g:slimv_leader.'xm',  ':call slimv#xrefMacroexpands()<CR>' )
-call s:MenuMap( 'Slim&v.&Xref.Who-S&pecializes',                g:slimv_leader.'xp', g:slimv_leader.'xp',  ':call slimv#xrefSpecializes()<CR>' )
-call s:MenuMap( 'Slim&v.&Xref.&List-Callers',                   g:slimv_leader.'xl', g:slimv_leader.'xl',  ':call slimv#xrefCallers()<CR>' )
-call s:MenuMap( 'Slim&v.&Xref.List-Call&ees',                   g:slimv_leader.'xe', g:slimv_leader.'xe',  ':call slimv#xrefCallees()<CR>' )
+" " Xref commands
+" call s:MenuMap( 'Slim&v.&Xref.Who-&Calls',                      g:slimv_leader.'xc', g:slimv_leader.'xc',  ':call slimv#xrefCalls()<CR>' )
+" call s:MenuMap( 'Slim&v.&Xref.Who-&References',                 g:slimv_leader.'xr', g:slimv_leader.'xr',  ':call slimv#xrefReferences()<CR>' )
+" call s:MenuMap( 'Slim&v.&Xref.Who-&Sets',                       g:slimv_leader.'xs', g:slimv_leader.'xs',  ':call slimv#xrefSets()<CR>' )
+" call s:MenuMap( 'Slim&v.&Xref.Who-&Binds',                      g:slimv_leader.'xb', g:slimv_leader.'xb',  ':call slimv#xrefBinds()<CR>' )
+" call s:MenuMap( 'Slim&v.&Xref.Who-&Macroexpands',               g:slimv_leader.'xm', g:slimv_leader.'xm',  ':call slimv#xrefMacroexpands()<CR>' )
+" call s:MenuMap( 'Slim&v.&Xref.Who-S&pecializes',                g:slimv_leader.'xp', g:slimv_leader.'xp',  ':call slimv#xrefSpecializes()<CR>' )
+" call s:MenuMap( 'Slim&v.&Xref.&List-Callers',                   g:slimv_leader.'xl', g:slimv_leader.'xl',  ':call slimv#xrefCallers()<CR>' )
+" call s:MenuMap( 'Slim&v.&Xref.List-Call&ees',                   g:slimv_leader.'xe', g:slimv_leader.'xe',  ':call slimv#xrefCallees()<CR>' )
 
-" Profile commands
-call s:MenuMap( 'Slim&v.&Profiling.Toggle-&Profile\.\.\.',      g:slimv_leader.'p',  g:slimv_leader.'pp',  ':<C-U>call slimv#profile()<CR>' )
-call s:MenuMap( 'Slim&v.&Profiling.Profile-&By-Substring\.\.\.',g:slimv_leader.'P',  g:slimv_leader.'pb',  ':<C-U>call slimv#profileSubstring()<CR>' )
-call s:MenuMap( 'Slim&v.&Profiling.Unprofile-&All',             g:slimv_leader.'U',  g:slimv_leader.'pa',  ':<C-U>call slimv#unprofileAll()<CR>' )
-call s:MenuMap( 'Slim&v.&Profiling.&Show-Profiled',             g:slimv_leader.'?',  g:slimv_leader.'ps',  ':<C-U>call slimv#showProfiled()<CR>' )
-call s:MenuMap( 'Slim&v.&Profiling.-ProfilingSep-',             '',                  '',                   ':' )
-call s:MenuMap( 'Slim&v.&Profiling.Profile-Rep&ort',            g:slimv_leader.'o',  g:slimv_leader.'pr',  ':<C-U>call slimv#profileReport()<CR>' )
-call s:MenuMap( 'Slim&v.&Profiling.Profile-&Reset',             g:slimv_leader.'X',  g:slimv_leader.'px',  ':<C-U>call slimv#profileReset()<CR>' )
+" " Profile commands
+" call s:MenuMap( 'Slim&v.&Profiling.Toggle-&Profile\.\.\.',      g:slimv_leader.'p',  g:slimv_leader.'pp',  ':<C-U>call slimv#profile()<CR>' )
+" call s:MenuMap( 'Slim&v.&Profiling.Profile-&By-Substring\.\.\.',g:slimv_leader.'P',  g:slimv_leader.'pb',  ':<C-U>call slimv#profileSubstring()<CR>' )
+" call s:MenuMap( 'Slim&v.&Profiling.Unprofile-&All',             g:slimv_leader.'U',  g:slimv_leader.'pa',  ':<C-U>call slimv#unprofileAll()<CR>' )
+" call s:MenuMap( 'Slim&v.&Profiling.&Show-Profiled',             g:slimv_leader.'?',  g:slimv_leader.'ps',  ':<C-U>call slimv#showProfiled()<CR>' )
+" call s:MenuMap( 'Slim&v.&Profiling.-ProfilingSep-',             '',                  '',                   ':' )
+" call s:MenuMap( 'Slim&v.&Profiling.Profile-Rep&ort',            g:slimv_leader.'o',  g:slimv_leader.'pr',  ':<C-U>call slimv#profileReport()<CR>' )
+" call s:MenuMap( 'Slim&v.&Profiling.Profile-&Reset',             g:slimv_leader.'X',  g:slimv_leader.'px',  ':<C-U>call slimv#profileReset()<CR>' )
 
-" Documentation commands
-call s:MenuMap( 'Slim&v.&Documentation.Describe-&Symbol',       g:slimv_leader.'s',  g:slimv_leader.'ds',  ':call slimv#describeSymbol()<CR>' )
-call s:MenuMap( 'Slim&v.&Documentation.&Apropos',               g:slimv_leader.'A',  g:slimv_leader.'dp',  ':call slimv#apropos()<CR>' )
-call s:MenuMap( 'Slim&v.&Documentation.&Hyperspec',             g:slimv_leader.'h',  g:slimv_leader.'dh',  ':call slimv#hyperspec()<CR>' )
-call s:MenuMap( 'Slim&v.&Documentation.Generate-&Tags',         g:slimv_leader.']',  g:slimv_leader.'dg',  ':call slimv#generateTags()<CR>' )
+" " Documentation commands
+" call s:MenuMap( 'Slim&v.&Documentation.Describe-&Symbol',       g:slimv_leader.'s',  g:slimv_leader.'ds',  ':call slimv#describeSymbol()<CR>' )
+" call s:MenuMap( 'Slim&v.&Documentation.&Apropos',               g:slimv_leader.'A',  g:slimv_leader.'dp',  ':call slimv#apropos()<CR>' )
+" call s:MenuMap( 'Slim&v.&Documentation.&Hyperspec',             g:slimv_leader.'h',  g:slimv_leader.'dh',  ':call slimv#hyperspec()<CR>' )
+" call s:MenuMap( 'Slim&v.&Documentation.Generate-&Tags',         g:slimv_leader.']',  g:slimv_leader.'dg',  ':call slimv#generateTags()<CR>' )
 
-" REPL commands
-call s:MenuMap( 'Slim&v.&Repl.&Connect-Server',                 g:slimv_leader.'c',  g:slimv_leader.'rc',  ':call slimv#connectServer()<CR>' )
-call s:MenuMap( '',                                             g:slimv_leader.'g',  g:slimv_leader.'rp',  ':call slimv#setPackage()<CR>' )
-call s:MenuMap( 'Slim&v.&Repl.Interrup&t-Lisp-Process',         g:slimv_leader.'y',  g:slimv_leader.'ri',  ':call slimv#interrupt()<CR>' )
-call s:MenuMap( 'Slim&v.&Repl.Clear-&REPL',                     g:slimv_leader.'-',  g:slimv_leader.'-',   ':call SlimvClearReplBuffer()<CR>' )
+" " REPL commands
+" call s:MenuMap( 'Slim&v.&Repl.&Connect-Server',                 g:slimv_leader.'c',  g:slimv_leader.'rc',  ':call slimv#connectServer()<CR>' )
+" call s:MenuMap( '',                                             g:slimv_leader.'g',  g:slimv_leader.'rp',  ':call slimv#setPackage()<CR>' )
+" call s:MenuMap( 'Slim&v.&Repl.Interrup&t-Lisp-Process',         g:slimv_leader.'y',  g:slimv_leader.'ri',  ':call slimv#interrupt()<CR>' )
+" call s:MenuMap( 'Slim&v.&Repl.Clear-&REPL',                     g:slimv_leader.'-',  g:slimv_leader.'-',   ':call SlimvClearReplBuffer()<CR>' )
 
 
 " =====================================================================

@@ -155,7 +155,7 @@ function! b:SlimvInitRepl()
 endfunction
 
 " Lookup symbol in the list of Lisp Hyperspec symbol databases
-function! b:slimv#hyperspecLookup( word, exact, all )
+function! b:SlimvHyperspecLookup( word, exact, all )
     if !exists( 'g:slimv_clhs_loaded' )
         runtime ftplugin/**/slimv-clhs.vim
     endif
