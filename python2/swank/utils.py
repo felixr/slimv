@@ -110,7 +110,7 @@ def get_package():
     """
     Package set by slimv.vim or nil
     """
-    pkg = vim.eval("s:swank_package")
+    pkg = vim.eval("s:ctx.swank_package")
     if pkg == '':
         return 'nil'
     else:
@@ -120,7 +120,7 @@ def get_swank_package(package):
     """
     Package set by slimv.vim or current swank package
     """
-    pkg = vim.eval("s:swank_package")
+    pkg = vim.eval("s:ctx.swank_package")
     if pkg == '':
         return requote(package)
     else:
@@ -130,6 +130,6 @@ def get_indent_info(name):
     indent = ''
     if name in indent_info:
         indent = indent_info[name]
-    vc = ":let s:indent='" + indent + "'"
+    vc = ":let s:ctx.indent='" + indent + "'"
     vim.command(vc)
 

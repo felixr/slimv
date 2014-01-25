@@ -1,3 +1,13 @@
+" Go to the end of the screen line
+function s:EndOfScreenLine()
+    if len(getline('.')) < &columns
+        " g$ moves the cursor to the rightmost column if virtualedit=all
+        normal! $
+    else
+        normal! g$
+    endif
+endfunction
+
 " Open a new REPL buffer
 function! slimv#repl#open()
     call slimv#buffer#open( g:slimv_repl_name )
@@ -125,7 +135,7 @@ function! slimv#repl#endUpdate()
     let prompt_offset = lastline - b:repl_prompt_line
     if g:slimv_repl_max_len > 0 && lastline > g:slimv_repl_max_len
         let start = ''
-        let ending = s:CloseForm( getline( 1, lastline - g:slimv_repl_max_len ) )
+        let ending = slimv#CloseForm( getline( 1, lastline - g:slimv_repl_max_len ) )
         if match( ending, ')\|\]\|}\|"' ) >= 0
             " Reverse the ending and replace matched characters with their pairs
             let start = join( reverse( split( ending, '.\zs' ) ), '' )
@@ -148,15 +158,14 @@ function! slimv#repl#endUpdate()
     call slimv#markBufferEnd()
     let repl_buf = bufnr( '^' . g:slimv_repl_name . '$' )
     let repl_win = bufwinnr( repl_buf )
-    let current_buf = slimv#getCurrentBuffer()
-    let sldb_level = slimv#getSldbLevel()
-    if current_buf >= 0 && repl_buf != current_buf && repl_win != -1 && sldb_level < 0
+    let ctx = slimv#context()
+    if ctx.current_buf >= 0 && repl_buf != ctx.current_buf && repl_win != -1 && ctx.sldb_level < 0
         " Switch back to the caller buffer/window
         let repl_winid = getwinvar( repl_win, 'id' )
-        if winnr('$') > 1 && current_win != '' && current_win != repl_winid
-            call s:SwitchToWindow( s:current_win )
+        if winnr('$') > 1 && ctx.current_win != '' && ctx.current_win != repl_winid
+            call slimv#SwitchToWindow( ctx.current_win )
         endif
-        execute "buf " . current_buf
+        execute "buf " . ctx.current_buf
     endif
 endfunction
 
@@ -200,13 +209,14 @@ function! slimv#repl#refresh()
         return
     endif
 
-    if s:swank_connected
+    let ctx = slimv#context()
+    if ctx.swank_connected
         call slimv#swankResponse()
     endif
 
-    if exists("s:input_prompt") && s:input_prompt != ''
-        let answer = input( s:input_prompt )
-        unlet s:input_prompt
+    if exists("ctx.input_prompt") && ctx.input_prompt != ''
+        let answer = input( ctx.input_prompt )
+        unlet ctx.input_prompt
         echo ""
         call slimv#command( 'python swank_return("' . answer . '")' )
     endif

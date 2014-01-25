@@ -5,7 +5,7 @@ function! slimv#eval#region() range
     else
         " Register was passed, so eval register contents instead
         let reg = getreg( v:register )
-        let ending = s:CloseForm( [reg] )
+        let ending = slimv#CloseForm( [reg] )
         if ending == 'ERROR'
             call slimv#error( 'Too many or invalid closing parens in register "' . v:register )
             return

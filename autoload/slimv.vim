@@ -1,34 +1,57 @@
-" =====================================================================
-"  Other non-global script variables
-" =====================================================================
-"
+"     \ 'indent' : '',                                         " Most recent indentation info
+"     \ 'last_update' : 0,                                     " The last update time for the REPL buffer
+"     \ 'save_updatetime' : &updatetime,                       " The original value for 'updatetime'
+"     \ 'save_showmode' : &showmode,                           " The original value for 'showmode'
+"     \ 'python_initialized' : 0,                              " Is the embedded Python initialized?
+"     \ 'swank_connected' : 0,                                 " Is the SWANK server connected?
+"     \ 'swank_package' : '',                                  " Package to use at the next SWANK eval
+"     \ 'swank_form' : '',                                     " Form to send to SWANK
+"     \ 'refresh_disabled' : 0,                                " Set this variable temporarily to avoid recursive REPL rehresh calls
+"     \ 'sldb_level' : -1,                                     " Are we in the SWANK debugger? -1 == no, else SLDB level
+"     \ 'break_on_exception' : 0,                              " Enable debugger break on exceptions (for ritz-swank)
+"     \ 'compiled_file = '',                                  " Name of the compiled file
+"     \ 'current_buf' : -1,                                    " Swank action was requested from this buffer
+"     \ 'current_win' : 0,                                     " Swank action was requested from this window
+"     \ 'arglist_line' : 0,                                    " Arglist was requested in this line ...
+"     \ 'arglist_col' : 0,                                     " ... and column
+"     \ 'inspect_path' : [],                                   " Inspection path of the current object
+"     \ 'skip_sc' : 'synIDattr(synID(line("."), col("."), 0), "name") =~ "[Ss]tring\\|[Cc]omment"', " Skip matches inside string or comment
+"     \ 'skip_q' : 'getline(".")[col(".")-2] == "\\"',         " Skip escaped double quote characters in matches
+"     \ 'frame_def' : '^\s\{0,2}\d\{1,}:',                     " Regular expression to match SLDB restart or frame identifier
+"     \ 'spec_indent' : 'flet\|labels\|macrolet\|symbol-macrolet',  " List of symbols need special indenting
+"     \ 'spec_param' : 'defmacro',                             " List of symbols with special parameter list
+"     \ 'binding_form' : 'let\|let\*',                         " List of symbols with binding list
+"     \ 'win_id' : 0 }                                          " Counter for generating unique window id
 
-let s:indent = ''                                         " Most recent indentation info
-let s:last_update = 0                                     " The last update time for the REPL buffer
-let s:save_updatetime = &updatetime                       " The original value for 'updatetime'
-let s:save_showmode = &showmode                           " The original value for 'showmode'
-let s:python_initialized = 0                              " Is the embedded Python initialized?
-let s:swank_connected = 0                                 " Is the SWANK server connected?
-let s:swank_package = ''                                  " Package to use at the next SWANK eval
-let s:swank_form = ''                                     " Form to send to SWANK
-let s:refresh_disabled = 0                                " Set this variable temporarily to avoid recursive REPL rehresh calls
-let s:sldb_level = -1                                     " Are we in the SWANK debugger? -1 == no, else SLDB level
-let s:break_on_exception = 0                              " Enable debugger break on exceptions (for ritz-swank)
-let s:compiled_file = ''                                  " Name of the compiled file
-let s:current_buf = -1                                    " Swank action was requested from this buffer
-let s:current_win = 0                                     " Swank action was requested from this window
-let s:arglist_line = 0                                    " Arglist was requested in this line ...
-let s:arglist_col = 0                                     " ... and column
-let s:inspect_path = []                                   " Inspection path of the current object
-let s:skip_sc = 'synIDattr(synID(line("."), col("."), 0), "name") =~ "[Ss]tring\\|[Cc]omment"'
-                                                          " Skip matches inside string or comment 
-let s:skip_q = 'getline(".")[col(".")-2] == "\\"'         " Skip escaped double quote characters in matches
-let s:frame_def = '^\s\{0,2}\d\{1,}:'                     " Regular expression to match SLDB restart or frame identifier
-let s:spec_indent = 'flet\|labels\|macrolet\|symbol-macrolet'
-                                                          " List of symbols need special indenting
-let s:spec_param = 'defmacro'                             " List of symbols with special parameter list
-let s:binding_form = 'let\|let\*'                         " List of symbols with binding list
-let s:win_id = 0                                          " Counter for generating unique window id
+let s:ctx = {
+    \'indent': '',
+    \'last_update': 0,
+    \'save_updatetime': &updatetime,
+    \'save_showmode': &showmode,
+    \'python_initialized': 0,
+    \'swank_connected': 0,
+    \'swank_package': '',
+    \'swank_form': '',
+    \'refresh_disabled': 0,
+    \'sldb_level': -1,
+    \'break_on_exception': 0,
+    \'compiled_file': '',
+    \'current_buf': -1,
+    \'current_win': 0,
+    \'arglist_line': 0,
+    \'arglist_col': 0,
+    \'inspect_path': [],
+    \'skip_sc': 'synIDattr(synID(line("."), col("."), 0), "name") =~ "[Ss]tring\\|[Cc]omment"',
+    \'skip_q': 'getline(".")[col(".")-2] == "\\"',
+    \'frame_def': '^\s\{0,2}\d\{1,}:',
+    \'spec_indent': 'flet\|labels\|macrolet\|symbol-macrolet',
+    \'spec_param': 'defmacro',
+    \'binding_form': 'let\|let\*',
+    \'win_id': 0 }
+
+function! slimv#context()
+    return s:ctx
+endfunction
 
 " Get the filetype (Lisp dialect) used by Slimv
 function! slimv#getFiletype()
@@ -73,7 +96,7 @@ function! slimv#swankCommand()
                     return '!' . path2as . ' ' . cmd
                 else
                     return '!osascript -e "tell application \"Terminal\" to do script \"' . cmd . '\""'
-                endif 
+                endif
         elseif $STY != ''
             " GNU screen under Linux
             return '! screen -X eval "title swank" "screen ' . cmd . '" "select swank"'
@@ -101,7 +124,7 @@ function! slimv#error( msg )
     echohl ErrorMsg
     echo a:msg
     echohl None
-endfunction 
+endfunction
 
 " Display an error message and a question, return user response
 function! slimv#errorAsk( msg, question )
@@ -110,18 +133,18 @@ function! slimv#errorAsk( msg, question )
     echo ""
     echohl None
     return answer
-endfunction 
+endfunction
 
 " Display an error message and wait for ENTER
 function! slimv#errorWait( msg )
     call slimv#errorAsk( a:msg, " Press ENTER to continue." )
-endfunction 
+endfunction
 
 " Shorten long messages to fit status line
 function! slimv#shortEcho( msg )
     let saved=&shortmess
     set shortmess+=T
-    exe "normal :echomsg a:msg\n" 
+    exe "normal :echomsg a:msg\n"
     let &shortmess=saved
 endfunction
 
@@ -136,63 +159,53 @@ function! slimv#markBufferEnd()
 endfunction
 
 
-function! slimv#getCurrentBuffer()
-    return s:current_buf
-endfunction
-
-function! slimv#getSldbLevel()
-    return s:sldb_level
-endfunction 
-
-
-
 " Save caller buffer identification
 function! slimv#beginUpdate()
     call slimv#MakeWindowId()
-    let s:current_buf = bufnr( "%" )
-    let s:current_win = getwinvar( winnr(), 'id' )
+    let s:ctx.current_buf = bufnr( "%" )
+    let s:ctx.current_win = getwinvar( winnr(), 'id' )
 endfunction
 
 " Switch to the buffer/window that was active before a swank action
 function! slimv#restoreFocus()
     let buf = bufnr( "%" )
     let win = getwinvar( winnr(), 'id' )
-    if winnr('$') > 1 && s:current_win != '' && s:current_win != win
+    if winnr('$') > 1 && s:ctx.current_win != '' && s:ctx.current_win != win
         " Switch to the caller window
-        call s:SwitchToWindow( s:current_win )
+        call slimv#SwitchToWindow( s:ctx.current_win )
     endif
-    if s:current_buf >= 0 && buf != s:current_buf
+    if s:ctx.current_buf >= 0 && buf != s:ctx.current_buf
         " Switch to the caller buffer
-        execute "buf " . s:current_buf
+        execute "buf " . s:ctx.current_buf
     endif
 endfunction
 
 function! slimv#isRefreshDisabled()
-    return s:refresh_disabled 
-endfunction 
+    return s:ctx.refresh_disabled
+endfunction
 
 
 " Handle response coming from the SWANK listener
 function! slimv#swankResponse()
-    let s:refresh_disabled = 1
+    let s:ctx.refresh_disabled = 1
     silent execute 'python swank.output(1)'
-    let s:refresh_disabled = 0
-    let s:swank_action = ''
-    let s:swank_result = ''
+    let s:ctx.refresh_disabled = 0
+    let s:ctx.swank_action = ''
+    let s:ctx.swank_result = ''
     silent execute 'python swank.response("")'
 
-    if s:swank_action == ':describe-symbol' && s:swank_result != ''
-        echo substitute(s:swank_result,'^\n*','','')
+    if s:ctx.swank_action == ':describe-symbol' && s:ctx.swank_result != ''
+        echo substitute(s:ctx.swank_result,'^\n*','','')
     endif
-    if s:swank_actions_pending
-        let s:last_update = -1
-    elseif s:last_update < 0
+    if s:ctx.swank_actions_pending
+        let s:ctx.last_update = -1
+    elseif s:ctx.last_update < 0
         " Remember the time when all actions are processed
-        let s:last_update = localtime()
+        let s:ctx.last_update = localtime()
     endif
-    if s:swank_actions_pending == 0 && s:last_update >= 0 && s:last_update < localtime() - 2
+    if s:ctx.swank_actions_pending == 0 && s:ctx.last_update >= 0 && s:ctx.last_update < localtime() - 2
         " All SWANK output handled long ago, restore original update frequency
-        let &updatetime = s:save_updatetime
+        let &updatetime = s:ctx.save_updatetime
     else
         " SWANK output still pending, keep higher update frequency
         let &updatetime = g:slimv_updatetime
@@ -205,27 +218,27 @@ function! slimv#command( cmd )
     if g:slimv_updatetime < &updatetime
         " Update more frequently until all swank responses processed
         let &updatetime = g:slimv_updatetime
-        let s:last_update = -1
+        let s:ctx.last_update = -1
     endif
 endfunction
 
 " Execute the given SWANK command, wait for and return the response
 function! slimv#commandGetResponse( name, cmd, timeout )
-    let s:refresh_disabled = 1
+    let s:ctx.refresh_disabled = 1
     call slimv#command( a:cmd )
-    let s:swank_action = ''
-    let s:swank_result = ''
+    let s:ctx.swank_action = ''
+    let s:ctx.swank_result = ''
     let starttime = localtime()
     let cmd_timeout = a:timeout
     if cmd_timeout == 0
         let cmd_timeout = 3
     endif
-    while s:swank_action == '' && localtime()-starttime < cmd_timeout
+    while s:ctx.swank_action == '' && localtime()-starttime < cmd_timeout
         python swank.output( 0 )
         silent execute 'python swank.response("' . a:name . '")'
     endwhile
-    let s:refresh_disabled = 0
-    return s:swank_result
+    let s:ctx.refresh_disabled = 0
+    return s:ctx.swank_result
 endfunction
 
 " This function re-triggers the CursorHold event
@@ -268,15 +281,6 @@ function! slimv#refreshModeOff()
 endfunction
 
 
-" Go to the end of the screen line
-function s:EndOfScreenLine()
-    if len(getline('.')) < &columns
-        " g$ moves the cursor to the rightmost column if virtualedit=all
-        normal! $
-    else
-        normal! g$
-    endif
-endfunction
 
 " Open a new Threads buffer
 function slimv#openThreadsBuffer()
@@ -490,10 +494,10 @@ function! slimv#findDefunStart()
     let l = line( '.' )
     let matchb = max( [l-200, 1] )
     if slimv#getFiletype() == 'r'
-        while searchpair( '(', '', ')', 'bW', s:skip_sc, matchb ) || searchpair( '{', '', '}', 'bW', s:skip_sc, matchb ) || searchpair( '\[', '', '\]', 'bW', s:skip_sc, matchb )
+        while searchpair( '(', '', ')', 'bW', s:ctx.skip_sc, matchb ) || searchpair( '{', '', '}', 'bW', s:ctx.skip_sc, matchb ) || searchpair( '\[', '', '\]', 'bW', s:ctx.skip_sc, matchb )
         endwhile
     else
-        while searchpair( '(', '', ')', 'bW', s:skip_sc, matchb )
+        while searchpair( '(', '', ')', 'bW', s:ctx.skip_sc, matchb )
         endwhile
     endif
 endfunction
@@ -548,9 +552,9 @@ function! slimv#findPackage()
         normal! zN
         if l:packagename_tokens != []
             " Remove quote character from package name
-            let s:swank_package = substitute( l:packagename_tokens[0], "'", '', '' )
+            let s:ctx.swank_package = substitute( l:packagename_tokens[0], "'", '', '' )
         else
-            let s:swank_package = ''
+            let s:ctx.swank_package = ''
         endif
     endif
     let &ignorecase = save_ic
@@ -560,16 +564,16 @@ endfunction
 " Execute the given SWANK command with current package defined
 function! slimv#commandUsePackage( cmd )
     call slimv#findPackage()
-    let s:refresh_disabled = 1
+    let s:ctx.refresh_disabled = 1
     call slimv#command( a:cmd )
-    let s:swank_package = ''
-    let s:refresh_disabled = 0
+    let s:ctx.swank_package = ''
+    let s:ctx.refresh_disabled = 0
     call slimv#repl#refresh()
 endfunction
 
 " Initialize embedded Python and connect to SWANK server
 function! slimv#connectSwank()
-    if !s:python_initialized
+    if !s:ctx.python_initialized
         if ! has('python')
             call slimv#errorWait( 'Vim is compiled without the Python feature or Python is not installed. Unable to run SWANK client.' )
             return 0
@@ -577,12 +581,12 @@ function! slimv#connectSwank()
         python import vim
         " execute 'pyfile ' . g:swank_path
         execute 'python from swank import *'
-        let s:python_initialized = 1
+        let s:ctx.python_initialized = 1
     endif
 
-    if !s:swank_connected
-        let s:swank_version = ''
-        let s:lisp_version = ''
+    if !s:ctx.swank_connected
+        let s:ctx.swank_version = ''
+        let s:ctx.lisp_version = ''
         if g:swank_host == ''
             let g:swank_host = input( 'Swank server host name: ', 'localhost' )
         endif
@@ -612,17 +616,17 @@ function! slimv#connectSwank()
         redraw
         echon "\rGetting SWANK connection info..."
         let starttime = localtime()
-        while s:swank_version == '' && localtime()-starttime < g:slimv_timeout
+        while s:ctx.swank_version == '' && localtime()-starttime < g:slimv_timeout
             call slimv#swankResponse()
         endwhile
-        if s:swank_version >= '2011-12-04'
+        if s:ctx.swank_version >= '2011-12-04'
             python swank_require('swank-repl')
             call slimv#swankResponse()
         endif
-        if s:swank_version >= '2008-12-23'
+        if s:ctx.swank_version >= '2008-12-23'
             call slimv#commandGetResponse( ':create-repl', 'python swank_create_repl()', g:slimv_timeout )
         endif
-        let s:swank_connected = 1
+        let s:ctx.swank_connected = 1
         if g:slimv_simple_compl == 0
             python swank_require('swank-fuzzy')
             call slimv#swankResponse()
@@ -637,10 +641,10 @@ function! slimv#connectSwank()
         endif
         if exists( "*b:slimv#replInit" )
             " Perform implementation specific REPL initialization if supplied
-            call b:slimv#replInit( s:lisp_version )
+            call b:slimv#replInit( s:ctx.lisp_version )
         endif
     endif
-    return s:swank_connected
+    return s:ctx.swank_connected
 endfunction
 
 " Send argument to Lisp server for evaluation
@@ -654,33 +658,33 @@ function! slimv#send( args, echoing, output )
     " Send the lines to the client for evaluation
     let text = join( a:args, "\n" ) . "\n"
 
-    let s:refresh_disabled = 1
-    let s:swank_form = text
+    let s:ctx.refresh_disabled = 1
+    let s:ctx.swank_form = text
     if a:output
-        call SlimvOpenReplBuffer()
+        call slimv#repl#open()
     endif
     if a:echoing && g:slimv_echolines != 0
         if g:slimv_echolines > 0
-            let nlpos = match( s:swank_form, "\n", 0, g:slimv_echolines )
+            let nlpos = match( s:ctx.swank_form, "\n", 0, g:slimv_echolines )
             if nlpos > 0
                 " Echo only the first g:slimv_echolines number of lines
-                let trimmed = strpart( s:swank_form, nlpos )
-                let s:swank_form = strpart( s:swank_form, 0, nlpos )
-                let ending = s:CloseForm( [s:swank_form] )
+                let trimmed = strpart( s:ctx.swank_form, nlpos )
+                let s:ctx.swank_form = strpart( s:ctx.swank_form, 0, nlpos )
+                let ending = slimv#CloseForm( [s:ctx.swank_form] )
                 if ending != 'ERROR'
                     if substitute( trimmed, '\s\|\n', '', 'g' ) == ''
                         " Only whitespaces are trimmed
-                        let s:swank_form = s:swank_form . ending . "\n"
+                        let s:ctx.swank_form = s:ctx.swank_form . ending . "\n"
                     else
                         " Valuable characters trimmed, indicate it by printing "..."
-                        let s:swank_form = s:swank_form . " ..." . ending . "\n"
+                        let s:ctx.swank_form = s:ctx.swank_form . " ..." . ending . "\n"
                     endif
                 endif
             endif
         endif
-        let lines = split( s:swank_form, '\n', 1 )
+        let lines = split( s:ctx.swank_form, '\n', 1 )
         call append( '$', lines )
-        let s:swank_form = text
+        let s:ctx.swank_form = text
     elseif a:output
         " Open a new line for the output
         call append( '$', '' )
@@ -688,9 +692,9 @@ function! slimv#send( args, echoing, output )
     if a:output
         call slimv#markBufferEnd()
     endif
-    call slimv#command( 'python swank_input("s:swank_form")' )
-    let s:swank_package = ''
-    let s:refresh_disabled = 0
+    call slimv#command( 'python swank_input("s:ctx.swank_form")' )
+    let s:ctx.swank_package = ''
+    let s:ctx.refresh_disabled = 0
     call slimv#refreshModeOn()
     call slimv#repl#refresh()
 endfunction
@@ -781,7 +785,7 @@ function! slimv#recallHistory( direction )
 endfunction
 
 " Return missing parens, double quotes, etc to properly close form
-function! s:CloseForm( lines )
+function! slimv#CloseForm( lines )
     let form = join( a:lines, "\n" )
     let end = ''
     let i = 0
@@ -842,14 +846,14 @@ function slimv#lispindent( lnum )
     let oldpos = winsaveview()
     normal! 0
     " Find containing form
-    let [lhead, chead] = searchpairpos( '(', '', ')', 'bW', s:skip_sc, backline )
+    let [lhead, chead] = searchpairpos( '(', '', ')', 'bW', s:ctx.skip_sc, backline )
     if lhead == 0
         " No containing form, lispindent() is OK
         call winrestview( oldpos )
         return li
     endif
     " Find outer form
-    let [lparent, cparent] = searchpairpos( '(', '', ')', 'bW', s:skip_sc, backline )
+    let [lparent, cparent] = searchpairpos( '(', '', ')', 'bW', s:ctx.skip_sc, backline )
     call winrestview( oldpos )
     if lparent == 0 || lhead != lparent
         " No outer form or starting above inner form, lispindent() is OK
@@ -871,7 +875,7 @@ function slimv#lispindent( lnum )
         endif
         let c = c + 1
     endwhile
-    if total_extra == 0  
+    if total_extra == 0
         " No multi-byte character, lispindent() is OK
         return li
     endif
@@ -912,7 +916,7 @@ function! slimv#indent( lnum )
     let plen = len( getline( pnum ) )
     if synIDattr( synID( pnum, plen, 0), 'name' ) =~ '[Ss]tring' && getline(pnum)[plen-1] != '"'
         " Previous non-blank line ends with an unclosed string, so this is a multi-line string
-        let [l, c] = searchpairpos( '"', '', '"', 'bnW', s:skip_q )
+        let [l, c] = searchpairpos( '"', '', '"', 'bnW', s:ctx.skip_q )
         if l == pnum && c > 0
             " Indent to the opening double quote (if found)
             return c
@@ -929,7 +933,7 @@ function! slimv#indent( lnum )
             " Structural change after the string, no special handling
         else
             " Find the start of the multi-line string (omit \" characters)
-            let [l, c] = searchpairpos( '"', '', '"', 'bnW', s:skip_q )
+            let [l, c] = searchpairpos( '"', '', '"', 'bnW', s:ctx.skip_q )
             if l > 0 && strpart(getline(l), 0, c-1) =~ '^\s*$'
                 " Nothing else before the string: indent to the opening "
                 call winrestview( oldpos )
@@ -954,10 +958,10 @@ function! slimv#indent( lnum )
     let parent = pnum
     let [l, c] = searchpos( ')', 'bW' )
     if l == pnum
-        let [l, c] = searchpairpos( '(', '', ')', 'bW', s:skip_sc, backline )
+        let [l, c] = searchpairpos( '(', '', ')', 'bW', s:ctx.skip_sc, backline )
         if l > 0
             " Make sure it is not a top level form and the containing form starts in the same line
-            let [l2, c2] = searchpairpos( '(', '', ')', 'bW', s:skip_sc, backline )
+            let [l2, c2] = searchpairpos( '(', '', ')', 'bW', s:ctx.skip_sc, backline )
             if l2 == l
                 " Remember the first line of the multi-line form
                 let parent = l
@@ -968,12 +972,12 @@ function! slimv#indent( lnum )
 
     " Find beginning of the innermost containing form
     normal! 0
-    let [l, c] = searchpairpos( '(', '', ')', 'bW', s:skip_sc, backline )
+    let [l, c] = searchpairpos( '(', '', ')', 'bW', s:ctx.skip_sc, backline )
     if l > 0
         if slimv#getFiletype() =~ '.*\(clojure\|scheme\|racket\).*'
             " Is this a clojure form with [] binding list?
             call winrestview( oldpos )
-            let [lb, cb] = searchpairpos( '\[', '', '\]', 'bW', s:skip_sc, backline )
+            let [lb, cb] = searchpairpos( '\[', '', '\]', 'bW', s:ctx.skip_sc, backline )
             if lb >= l && (lb > l || cb > c)
                 call winrestview( oldpos )
                 return cb
@@ -981,7 +985,7 @@ function! slimv#indent( lnum )
         endif
         " Is this a form with special indentation?
         let line = strpart( getline(l), c-1 )
-        if match( line, '\c^(\s*\('.s:spec_indent.'\)\>' ) >= 0
+        if match( line, '\c^(\s*\('.s:ctx.spec_indent.'\)\>' ) >= 0
             " Search for the binding list and jump to its end
             if search( '(' ) > 0
                 exe 'normal! %'
@@ -994,10 +998,10 @@ function! slimv#indent( lnum )
         elseif l == pnum
             " If the containing form starts above this line then find the
             " second outer containing form (possible start of the binding list)
-            let [l2, c2] = searchpairpos( '(', '', ')', 'bW', s:skip_sc, backline )
+            let [l2, c2] = searchpairpos( '(', '', ')', 'bW', s:ctx.skip_sc, backline )
             if l2 > 0
                 let line2 = strpart( getline(l2), c2-1 )
-                if match( line2, '\c^(\s*\('.s:spec_param.'\)\>' ) >= 0
+                if match( line2, '\c^(\s*\('.s:ctx.spec_param.'\)\>' ) >= 0
                     if search( '(' ) > 0
                         if line('.') == l && col('.') == c
                             " This is the parameter list of a special form
@@ -1007,7 +1011,7 @@ function! slimv#indent( lnum )
                     endif
                 endif
                 if slimv#getFiletype() !~ '.*clojure.*'
-                    if l2 == l && match( line2, '\c^(\s*\('.s:binding_form.'\)\>' ) >= 0
+                    if l2 == l && match( line2, '\c^(\s*\('.s:ctx.binding_form.'\)\>' ) >= 0
                         " Is this a lisp form with binding list?
                         call winrestview( oldpos )
                         return c
@@ -1022,11 +1026,11 @@ function! slimv#indent( lnum )
                     endif
                 endif
                 " Go one level higher and check if we reached a special form
-                let [l3, c3] = searchpairpos( '(', '', ')', 'bW', s:skip_sc, backline )
+                let [l3, c3] = searchpairpos( '(', '', ')', 'bW', s:ctx.skip_sc, backline )
                 if l3 > 0
                     " Is this a form with special indentation?
                     let line3 = strpart( getline(l3), c3-1 )
-                    if match( line3, '\c^(\s*\('.s:spec_indent.'\)\>' ) >= 0
+                    if match( line3, '\c^(\s*\('.s:ctx.spec_indent.'\)\>' ) >= 0
                         " This is the first body-line of a binding
                         call winrestview( oldpos )
                         return c + 1
@@ -1035,7 +1039,7 @@ function! slimv#indent( lnum )
                         let indent_keylists = 0
                     endif
                     " Finally go to the topmost level to check for some forms with special keyword indenting
-                    let [l4, c4] = searchpairpos( '(', '', ')', 'brW', s:skip_sc, backline )
+                    let [l4, c4] = searchpairpos( '(', '', ')', 'brW', s:ctx.skip_sc, backline )
                     if l4 > 0
                         let line4 = strpart( getline(l4), c4-1 )
                         if match( line4, '\c^(\s*defsystem\>' ) >= 0
@@ -1095,16 +1099,16 @@ function! slimv#indent( lnum )
         endif
         " Remove package specification
         let func = substitute(func, '^.*:', '', '')
-        if func != '' && s:swank_connected
+        if func != '' && s:ctx.swank_connected
             " Look how many arguments are on the same line
             " If an argument is actually a multi-line subform, then replace it with a single character
             let form = substitute( form, "([^()]*$", '0', 'g' )
             let form = substitute( form, "[()\\[\\]{}#'`,]", '', 'g' )
             let args_here = len( split( form ) ) - 1
             " Get swank indent info
-            let s:indent = ''
+            let s:ctx.indent = ''
             silent execute 'python get_indent_info("' . func . '")'
-            if s:indent != '' && s:indent == args_here
+            if s:ctx.indent != '' && s:ctx.indent == args_here
                 " The next one is an &body argument, so indent by 2 spaces from the opening '('
                 return c + 1
             endif
@@ -1112,7 +1116,7 @@ function! slimv#indent( lnum )
             if synIDattr( synID( l, llen, 0), 'name' ) =~ '[Ss]tring' && line[llen-1] != '"'
                 " Parent line ends with a multi-line string
                 " lispindent() fails to handle it correctly
-                if s:indent == '' && args_here > 0
+                if s:ctx.indent == '' && args_here > 0
                     " No &body argument, ignore lispindent() and indent to the 1st argument
                     return c + funclen - 1
                 endif
@@ -1129,7 +1133,7 @@ function! slimv#indent( lnum )
         return li + gap - 2
     endif
     return li
-endfunction 
+endfunction
 
 " Convert indent value to spaces or a mix of tabs and spaces
 " depending on the value of 'expandtab'
@@ -1166,7 +1170,7 @@ function! slimv#sendCommand( close )
             endwhile
 
             " Count the number of opening and closing braces
-            let end = s:CloseForm( cmd )
+            let end = slimv#CloseForm( cmd )
             if end == 'ERROR'
                 " Too many closing parens
                 call slimv#errorWait( "Too many or invalid closing parens found." )
@@ -1213,7 +1217,7 @@ function! slimv#closeForm()
         call add( form, getline( l ) )
         let l = l + 1
     endwhile
-    let end = s:CloseForm( form )
+    let end = slimv#CloseForm( form )
     if end == 'ERROR'
         " Too many closing parens
         call slimv#errorWait( "Too many or invalid closing parens found." )
@@ -1230,8 +1234,8 @@ endfunction
 
 " Handle insert mode 'Enter' keypress
 function! slimv#handleEnter()
-    let s:arglist_line = line('.')
-    let s:arglist_col = col('.')
+    let s:ctx.arglist_line = line('.')
+    let s:ctx.arglist_col = col('.')
     if pumvisible()
         " Pressing <CR> in a pop up selects entry.
         return "\<C-Y>"
@@ -1249,7 +1253,7 @@ endfunction
 " Display arglist after pressing Enter
 function! slimv#arglistOnEnter()
     let retval = ""
-    if s:arglist_line > 0
+    if s:ctx.arglist_line > 0
         if col('.') > len(getline('.'))
             " Stay at the end of line
             let retval = "\<End>"
@@ -1260,10 +1264,10 @@ function! slimv#arglistOnEnter()
             call setline( l, slimv#MakeIndent( slimv#indent(l) ) )
             normal! $
         endif
-        call slimv#arglist( s:arglist_line, s:arglist_col )
+        call slimv#arglist( s:ctx.arglist_line, s:ctx.arglist_col )
     endif
-    let s:arglist_line = 0
-    let s:arglist_col = 0
+    let s:ctx.arglist_line = 0
+    let s:ctx.arglist_col = 0
 
     " This function is called from <C-R>= mappings, return additional keypress
     return retval
@@ -1380,11 +1384,11 @@ function! slimv#handleEnterRepl()
     endwhile
 
     " Count the number of opening and closing braces in the command before the cursor
-    let end = s:CloseForm( cmd )
+    let end = slimv#CloseForm( cmd )
     if end != 'ERROR' && end != ''
         " Command part before cursor is unbalanced, insert newline
-        let s:arglist_line = line('.')
-        let s:arglist_col = col('.')
+        let s:ctx.arglist_line = line('.')
+        let s:ctx.arglist_col = col('.')
         if pumvisible()
             " Pressing <CR> in a pop up selects entry.
             return "\<C-Y>"
@@ -1410,7 +1414,7 @@ endfunction
 " Handle normal mode 'Enter' keypress in the SLDB buffer
 function! slimv#handleEnterSldb()
     let line = getline('.')
-    if s:sldb_level >= 0
+    if s:ctx.sldb_level >= 0
         " Check if Enter was pressed in a section printed by the SWANK debugger
         " The source specification is within a fold, so it has to be tested first
         let mlist = matchlist( line, '^\s\+in "\(.*\)" \(line\|byte\) \(\d\+\)$' )
@@ -1432,7 +1436,7 @@ function! slimv#handleEnterSldb()
             normal za
             return
         endif
-        let item = matchstr( line, s:frame_def )
+        let item = matchstr( line, s:ctx.frame_def )
         if item != ''
             let item = substitute( item, '\s\|:', '', 'g' )
             if search( '^Backtrace:', 'bnW' ) > 0
@@ -1453,7 +1457,7 @@ function! slimv#handleEnterSldb()
             if search( '^Restarts:', 'bnW' ) > 0
                 " Apply item-th restart
                 call slimv#quitSldb()
-                silent execute 'python swank_invoke_restart("' . s:sldb_level . '", "' . item . '")'
+                silent execute 'python swank_invoke_restart("' . s:ctx.sldb_level . '", "' . item . '")'
                 call slimv#repl#refresh()
                 return
             endif
@@ -1490,13 +1494,13 @@ endfunction
 " Generate unique window id for the current window
 function slimv#MakeWindowId()
     if g:slimv_repl_split && !exists('w:id')
-        let s:win_id = s:win_id + 1
-        let w:id = s:win_id
+        let s:ctx.win_id = s:ctx.win_id + 1
+        let w:id = s:ctx.win_id
     endif
 endfunction
 
 " Find and switch to window with the specified window id
-function s:SwitchToWindow( id )
+function slimv#SwitchToWindow( id )
     for winnr in range( 1, winnr('$') )
         if getwinvar( winnr, 'id' ) is a:id
             execute winnr . "wincmd w"
@@ -1596,14 +1600,14 @@ function! slimv#arglist( ... )
         endif
     endif
     call s:SetKeyword()
-    if s:swank_connected && c > 0 && line[c-1] =~ '\k\|)\|\]\|}\|"'
+    if s:ctx.swank_connected && c > 0 && line[c-1] =~ '\k\|)\|\]\|}\|"'
         " Display only if entering the first space after a keyword
         let arg = ''
         if slimv#getFiletype() == 'r'
             let arg = slimv#rFunction()
         else
             let matchb = max( [l-200, 1] )
-            let [l0, c0] = searchpairpos( '(', '', ')', 'nbW', s:skip_sc, matchb )
+            let [l0, c0] = searchpairpos( '(', '', ')', 'nbW', s:ctx.skip_sc, matchb )
             if l0 > 0
                 " Found opening paren, let's find out the function name
                 while arg == '' && l0 <= l
@@ -1623,13 +1627,13 @@ function! slimv#arglist( ... )
                 " Print argument list in status line with newlines removed.
                 " Disable showmode until the next ESC to prevent
                 " immeditate overwriting by the "-- INSERT --" text.
-                let s:save_showmode = &showmode
+                let s:ctx.save_showmode = &showmode
                 set noshowmode
                 let msg = substitute( msg, "\n", "", "g" )
                 redraw
                 if slimv#getFiletype() == 'r'
                     call slimv#shortEcho( arg . '(' . msg . ')' )
-                elseif match( msg, "\\V" . arg ) != 1 " Use \V ('very nomagic') for exact string match instead of regex 
+                elseif match( msg, "\\V" . arg ) != 1 " Use \V ('very nomagic') for exact string match instead of regex
                     " Function name is not received from REPL
                     call slimv#shortEcho( "(" . arg . ' ' . msg[1:] )
                 else
@@ -1646,18 +1650,18 @@ endfunction
 
 " Start and connect swank server
 function! slimv#connectServer()
-    if s:swank_connected
+    if s:ctx.swank_connected
         python swank_disconnect()
-        let s:swank_connected = 0
-	" Give swank server some time for disconnecting
+        let s:ctx.swank_connected = 0
+        " Give swank server some time for disconnecting
         sleep 500m
-    endif 
+    endif
     call slimv#beginUpdate()
     if slimv#connectSwank()
         let repl_buf = bufnr( '^' . g:slimv_repl_name . '$' )
         let repl_win = bufwinnr( repl_buf )
         if repl_buf == -1 || ( g:slimv_repl_split && repl_win == -1 )
-            call SlimvOpenReplBuffer()
+            call slimv#repl#open()
         endif
     endif
 endfunction
@@ -1671,7 +1675,7 @@ function! slimv#getRegion(first, last)
         " No range was selected, select current paragraph
         normal! vap
         execute "normal! \<Esc>"
-        call winrestview( oldpos ) 
+        call winrestview( oldpos )
         let lines = getline( "'<", "'>" )
         if lines == [] || lines == ['']
             call slimv#error( "No range selected." )
@@ -1689,14 +1693,14 @@ function! slimv#getRegion(first, last)
 
     " Find and set package/namespace definition preceding the region
     call slimv#findPackage()
-    call winrestview( oldpos ) 
+    call winrestview( oldpos )
     return lines
 endfunction
 
 
 " Undefine function
 function! slimv#undefineFunction()
-    if s:swank_connected
+    if s:ctx.swank_connected
         call slimv#command( 'python swank_undefine_function("' . slimv#selectSymbol() . '")' )
         call slimv#repl#refresh()
     endif
@@ -1711,12 +1715,12 @@ function! slimv#macroexpand()
         if !slimv#selectForm( 0 )
             return
         endif
-        let s:swank_form = slimv#getSelection()
+        let s:ctx.swank_form = slimv#getSelection()
         if bufname( "%" ) == g:slimv_repl_name
             " If this is the REPL buffer then go to EOF
             call s:EndOfBuffer()
         endif
-        call slimv#commandUsePackage( 'python swank_macroexpand("s:swank_form")' )
+        call slimv#commandUsePackage( 'python swank_macroexpand("s:ctx.swank_form")' )
     endif
 endfunction
 
@@ -1727,25 +1731,25 @@ function! slimv#macroexpandAll()
         if !slimv#selectForm( 0 )
             return
         endif
-        let s:swank_form = slimv#getSelection()
+        let s:ctx.swank_form = slimv#getSelection()
         if bufname( "%" ) == g:slimv_repl_name
             " If this is the REPL buffer then go to EOF
             call s:EndOfBuffer()
         endif
-        call slimv#commandUsePackage( 'python swank_macroexpand_all("s:swank_form")' )
+        call slimv#commandUsePackage( 'python swank_macroexpand_all("s:ctx.swank_form")' )
     endif
 endfunction
 
 " Toggle debugger break on exceptions
 " Only for ritz-swank 0.4.0 and above
 function! slimv#breakOnException()
-    if slimv#getFiletype() =~ '.*clojure.*' && s:swank_version >= '2010-11-13'
+    if slimv#getFiletype() =~ '.*clojure.*' && s:ctx.swank_version >= '2010-11-13'
         " swank-clojure is abandoned at protocol version 20100404, so it must be ritz-swank
         if slimv#connectSwank()
-            let s:break_on_exception = ! s:break_on_exception
-            call slimv#command( 'python swank_break_on_exception(' . s:break_on_exception . ')' )
+            let s:ctx.break_on_exception = ! s:ctx.break_on_exception
+            call slimv#command( 'python swank_break_on_exception(' . s:ctx.break_on_exception . ')' )
             call slimv#repl#refresh()
-            echomsg 'Break On Exception ' . (s:break_on_exception ? 'enabled.' : 'disabled.')
+            echomsg 'Break On Exception ' . (s:ctx.break_on_exception ? 'enabled.' : 'disabled.')
         endif
     else
         call slimv#error( "This function is implemented only for ritz-swank." )
@@ -1785,9 +1789,9 @@ function! slimv#untrace()
         return
     endif
     if slimv#connectSwank()
-        let s:refresh_disabled = 1
+        let s:ctx.refresh_disabled = 1
         call slimv#command( 'python swank_untrace_all()' )
-        let s:refresh_disabled = 0
+        let s:ctx.refresh_disabled = 0
         call slimv#repl#refresh()
     endif
 endfunction
@@ -1808,12 +1812,12 @@ function! slimv#inspect()
     if !slimv#connectSwank()
         return
     endif
-    let s:inspect_path = []
+    let s:ctx.inspect_path = []
     let frame = s:DebugFrame()
     if frame != ''
         " Inspect selected for a frame in the debugger's Backtrace section
         let line = getline( '.' )
-        if matchstr( line, s:frame_def ) != ''
+        if matchstr( line, s:ctx.frame_def ) != ''
             " This is the base frame line in form '  1: xxxxx'
             let sym = ''
         elseif matchstr( line, '^\s\+in "\(.*\)" \(line\|byte\)' ) != ''
@@ -1830,7 +1834,7 @@ function! slimv#inspect()
         endif
         let s = input( 'Inspect in frame ' . frame . ' (evaluated): ', sym )
         if s != ''
-            let s:inspect_path = [s]
+            let s:ctx.inspect_path = [s]
             call slimv#beginUpdate()
             call slimv#command( 'python swank_inspect_in_frame("' . s . '", ' . frame . ')' )
             call slimv#repl#refresh()
@@ -1838,7 +1842,7 @@ function! slimv#inspect()
     else
         let s = input( 'Inspect: ', slimv#selectSymbolExt() )
         if s != ''
-            let s:inspect_path = [s]
+            let s:ctx.inspect_path = [s]
             call slimv#beginUpdate()
             call slimv#commandUsePackage( 'python swank_inspect("' . s . '")' )
         endif
@@ -1954,13 +1958,13 @@ endfunction
 function! slimv#compileDefun()
     let oldpos = winsaveview()
     if !slimv#selectDefun()
-        call winrestview( oldpos ) 
+        call winrestview( oldpos )
         return
     endif
     call slimv#beginUpdate()
     if slimv#connectSwank()
-        let s:swank_form = slimv#getSelection()
-        call slimv#commandUsePackage( 'python swank_compile_string("s:swank_form")' )
+        let s:ctx.swank_form = slimv#getSelection()
+        call slimv#commandUsePackage( 'python swank_compile_string("s:ctx.swank_form")' )
     endif
 endfunction
 
@@ -1980,15 +1984,15 @@ function! slimv#compileLoadFile()
     endif
     call slimv#beginUpdate()
     if slimv#connectSwank()
-        let s:compiled_file = ''
+        let s:ctx.compiled_file = ''
         call slimv#commandUsePackage( 'python swank_compile_file("' . filename . '")' )
         let starttime = localtime()
-        while s:compiled_file == '' && localtime()-starttime < g:slimv_timeout
+        while s:ctx.compiled_file == '' && localtime()-starttime < g:slimv_timeout
             call slimv#swankResponse()
         endwhile
-        if s:compiled_file != ''
-            call slimv#commandUsePackage( 'python swank_load_file("' . s:compiled_file . '")' )
-            let s:compiled_file = ''
+        if s:ctx.compiled_file != ''
+            call slimv#commandUsePackage( 'python swank_load_file("' . s:ctx.compiled_file . '")' )
+            let s:ctx.compiled_file = ''
         endif
     endif
 endfunction
@@ -2020,7 +2024,7 @@ function! slimv#compileRegion() range
     else
         " Register was passed, so compile register contents instead
         let reg = getreg( v:register )
-        let ending = s:CloseForm( [reg] )
+        let ending = slimv#CloseForm( [reg] )
         if ending == 'ERROR'
             call slimv#error( 'Too many or invalid closing parens in register "' . v:register )
             return
@@ -2033,8 +2037,8 @@ function! slimv#compileRegion() range
     let region = join( lines, "\n" )
     call slimv#beginUpdate()
     if slimv#connectSwank()
-        let s:swank_form = region
-        call slimv#commandUsePackage( 'python swank_compile_string("s:swank_form")' )
+        let s:ctx.swank_form = region
+        call slimv#commandUsePackage( 'python swank_compile_string("s:ctx.swank_form")' )
     endif
 endfunction
 
@@ -2059,9 +2063,9 @@ function! slimv#describe(arg)
     if a:arg == ''
         let arg = expand('<cword>')
     endif
-    " We don't want to try connecting here ... the error message would just 
+    " We don't want to try connecting here ... the error message would just
     " confuse the balloon logic
-    if !s:swank_connected
+    if !s:ctx.swank_connected
         return ''
     endif
     call slimv#findPackage()
@@ -2216,7 +2220,7 @@ function! slimv#complete( base )
     if a:base == ''
         return []
     endif
-    if s:swank_connected
+    if s:ctx.swank_connected
         " Save current buffer and window in case a swank command causes a buffer change
         let buf = bufnr( "%" )
         if winnr('$') < 2
@@ -2306,11 +2310,11 @@ endfunction
 function! slimv#setPackage()
     if slimv#connectSwank()
         call slimv#findPackage()
-        let pkg = input( 'Package: ', s:swank_package )
+        let pkg = input( 'Package: ', s:ctx.swank_package )
         if pkg != ''
-            let s:refresh_disabled = 1
+            let s:ctx.refresh_disabled = 1
             call slimv#command( 'python swank_set_package("' . pkg . '")' )
-            let s:refresh_disabled = 0
+            let s:ctx.refresh_disabled = 0
             call slimv#repl#refresh()
         endif
     endif
@@ -2355,7 +2359,7 @@ function! slimv#initBuffer()
     "noremap  <silent> <buffer> <C-C>      :call slimv#interrupt()<CR>
     augroup SlimvInsertLeave
         au!
-        au InsertLeave * :let &showmode=s:save_showmode
+        au InsertLeave * :let &showmode=s:ctx.save_showmode
     augroup END
     inoremap <silent> <buffer> <C-X>0     <C-O>:call slimv#closeForm()<CR>
     inoremap <silent> <buffer> <Tab>      <C-R>=slimv#handleTab()<CR>

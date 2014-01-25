@@ -75,7 +75,7 @@ class SwankSocket(object):
         try:
             self.sock.send(t)
         except socket.error:
-            vim.command("let s:swank_result='Socket error when sending to SWANK server.\n'")
+            vim.command("let s:ctx.swank_result='Socket error when sending to SWANK server.\n'")
             self.disconnect()
 
     def disconnect(self):
@@ -87,8 +87,8 @@ class SwankSocket(object):
             self.sock.close()
         finally:
             self.sock = None
-            vim.command('let s:swank_connected = 0')
-            vim.command("let s:swank_result='Connection to SWANK server is closed.\n'")
+            vim.command('let s:ctx.swank_connected = 0')
+            vim.command("let s:ctx.swank_result='Connection to SWANK server is closed.\n'")
 
     def recv_len(self, timeout):
         rec = ''
@@ -100,7 +100,7 @@ class SwankSocket(object):
             try:
                 data = self.sock.recv(l)
             except socket.error:
-                vim.command("let s:swank_result='Socket error when receiving from SWANK server.\n'")
+                vim.command("let s:ctx.swank_result='Socket error when receiving from SWANK server.\n'")
                 self.disconnect()
                 return rec
             while data and len(rec) < self.lenbytes:
@@ -110,7 +110,7 @@ class SwankSocket(object):
                     try:
                         data = self.sock.recv(l)
                     except socket.error:
-                        vim.command("let s:swank_result='Socket error when receiving from SWANK server.\n'")
+                        vim.command("let s:ctx.swank_result='Socket error when receiving from SWANK server.\n'")
                         self.disconnect()
                         return rec
         return rec
@@ -135,11 +135,11 @@ class SwankSocket(object):
                     try:
                         data = self.sock.recv(needed)
                     except socket.error:
-                        vim.command("let s:swank_result='Socket error when receiving from SWANK server.\n'")
+                        vim.command("let s:ctx.swank_result='Socket error when receiving from SWANK server.\n'")
                         self.disconnect()
                         return rec
                     if len(data) == 0:
-                        vim.command("let s:swank_result='Socket error when receiving from SWANK server.\n'")
+                        vim.command("let s:ctx.swank_result='Socket error when receiving from SWANK server.\n'")
                         self.disconnect()
                         return rec
                     rec = rec + data
@@ -322,7 +322,7 @@ class SwankSocket(object):
                         pkg = make_keys( conn_info[':package'] )
                         self.package = pkg[':name']
                         self.prompt = pkg[':prompt']
-                        vim.command('let s:swank_version="' + ver + '"')
+                        vim.command('let s:ctx.swank_version="' + ver + '"')
                         if ver >= '2011-11-08':
                             # Recent swank servers count bytes instead of unicode characters
                             self.use_unicode = False
@@ -382,7 +382,7 @@ class SwankSocket(object):
 
             elif result == ':abort':
                 self.debug_active = False
-                vim.command('let s:sldb_level=-1')
+                vim.command('let s:ctx.sldb_level=-1')
                 if len(r[1]) > 1:
                     retval = retval + '; Evaluation aborted on ' + unquote(r[1][1]).replace('\n', '\n;') + '\n' + self.get_prompt()
                 else:
@@ -399,12 +399,12 @@ class SwankSocket(object):
             self.debug_activated = True
             self.current_thread = r[1]
             sldb_level = r[2]
-            vim.command('let s:sldb_level=' + sldb_level)
+            vim.command('let s:ctx.sldb_level=' + sldb_level)
             self.frame_locals.clear()
 
         elif message == ':debug-return':
             self.debug_active = False
-            vim.command('let s:sldb_level=-1')
+            vim.command('let s:ctx.sldb_level=-1')
             retval = retval + '; Quit to level ' + r[2] + '\n' + self.get_prompt()
 
         elif message == ':ping':
@@ -448,7 +448,7 @@ class SwankSocket(object):
         for k,a in sorted(self.actions.items()):
             if a.pending:
                 count = count + 1
-        vc = ":let s:swank_actions_pending=" + str(count)
+        vc = ":let s:ctx.swank_actions_pending=" + str(count)
         vim.command(vc)
         return count
 
@@ -465,13 +465,13 @@ class SwankSocket(object):
         logtime(self.logfile,'[-Response-]')
         for k,a in sorted(self.actions.items()):
             if not a.pending and (name == '' or name == a.name):
-                vc = ":let s:swank_action='" + a.name + "'"
+                vc = ":let s:ctx.swank_action='" + a.name + "'"
                 vim.command(vc)
-                vim.command("let s:swank_result='%s'" % a.result.replace("'", "''"))
+                vim.command("let s:ctx.swank_result='%s'" % a.result.replace("'", "''"))
                 self.actions.pop(a.id)
                 self.actions_pending()
                 return
-        vc = ":let s:swank_action=''"
-        vc = ":let s:swank_result=''"
+        vc = ":let s:ctx.swank_action=''"
+        vc = ":let s:ctx.swank_result=''"
         vim.command(vc)
         self.actions_pending()

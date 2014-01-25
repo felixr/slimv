@@ -67,7 +67,7 @@ def swank_parse_inspect_content(pcont):
     if int(istate) > int(end):
         # Swank returns end+1000 if there are more entries to request
         buf.append(['', "[--more--]", "[--all---]"])
-    inspect_path = vim.eval('s:inspect_path')
+    inspect_path = vim.eval('s:ctx.inspect_path')
     if len(inspect_path) > 1:
         buf.append(['', '[<<] Return to ' + ' -> '.join(inspect_path[:-1])])
     else:
@@ -153,7 +153,7 @@ def swank_parse_compile(struct):
         filename = struct[5]
     if filename == '' or filename[0] != '"':
         filename = '"' + filename + '"'
-    vim.command('let s:compiled_file=' + filename + '')
+    vim.command('let s:ctx.compiled_file=' + filename + '')
     vim.command("let qflist = []")
     if type(warnings) == list:
         buf = '\n' + str(len(warnings)) + ' compiler notes:\n\n'
@@ -430,7 +430,7 @@ def swank_inspector_nth_action(n):
 
 def swank_inspector_pop():
     # Remove the last entry from the inspect path
-    vim.command('let s:inspect_path = s:inspect_path[:-2]')
+    vim.command('let s:ctx.inspect_path = s:ctx.inspect_path[:-2]')
     swank.rex(':inspector-pop', '(swank:inspector-pop)', 'nil', 't')
 
 def swank_inspect_in_frame(symbol, n):
