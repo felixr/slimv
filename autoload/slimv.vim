@@ -1780,56 +1780,6 @@ function! slimv#inspect()
     endif
 endfunction
 
-" Cross reference: who calls
-function! slimv#xrefBase( text, cmd )
-    if slimv#connectSwank()
-        let s = input( a:text, slimv#selectSymbol() )
-        if s != ''
-            call slimv#commandUsePackage( 'python swank_xref("' . s . '", "' . a:cmd . '")' )
-        endif
-    endif
-endfunction
-
-" Cross reference: who calls
-function! slimv#xrefCalls()
-    call slimv#xrefBase( 'Who calls: ', ':calls' )
-endfunction
-
-" Cross reference: who references
-function! slimv#xrefReferences()
-    call slimv#xrefBase( 'Who references: ', ':references' )
-endfunction
-
-" Cross reference: who sets
-function! slimv#xrefSets()
-    call slimv#xrefBase( 'Who sets: ', ':sets' )
-endfunction
-
-" Cross reference: who binds
-function! slimv#xrefBinds()
-    call slimv#xrefBase( 'Who binds: ', ':binds' )
-endfunction
-
-" Cross reference: who macroexpands
-function! slimv#xrefMacroexpands()
-    call slimv#xrefBase( 'Who macroexpands: ', ':macroexpands' )
-endfunction
-
-" Cross reference: who specializes
-function! slimv#xrefSpecializes()
-    call slimv#xrefBase( 'Who specializes: ', ':specializes' )
-endfunction
-
-" Cross reference: list callers
-function! slimv#xrefCallers()
-    call slimv#xrefBase( 'List callers: ', ':callers' )
-endfunction
-
-" Cross reference: list callees
-function! slimv#xrefCallees()
-    call slimv#xrefBase( 'List callees: ', ':callees' )
-endfunction
-
 " ---------------------------------------------------------------------
 
 " Switch or toggle profiling on for the selected function
@@ -2368,14 +2318,14 @@ endfunction
 " call s:MenuMap( 'Slim&v.&Compilation.Compile-&Region',          g:slimv_leader.'R',  g:slimv_leader.'cr',  ':call slimv#compileRegion()<CR>' )
 
 " " Xref commands
-" call s:MenuMap( 'Slim&v.&Xref.Who-&Calls',                      g:slimv_leader.'xc', g:slimv_leader.'xc',  ':call slimv#xrefCalls()<CR>' )
-" call s:MenuMap( 'Slim&v.&Xref.Who-&References',                 g:slimv_leader.'xr', g:slimv_leader.'xr',  ':call slimv#xrefReferences()<CR>' )
-" call s:MenuMap( 'Slim&v.&Xref.Who-&Sets',                       g:slimv_leader.'xs', g:slimv_leader.'xs',  ':call slimv#xrefSets()<CR>' )
-" call s:MenuMap( 'Slim&v.&Xref.Who-&Binds',                      g:slimv_leader.'xb', g:slimv_leader.'xb',  ':call slimv#xrefBinds()<CR>' )
-" call s:MenuMap( 'Slim&v.&Xref.Who-&Macroexpands',               g:slimv_leader.'xm', g:slimv_leader.'xm',  ':call slimv#xrefMacroexpands()<CR>' )
-" call s:MenuMap( 'Slim&v.&Xref.Who-S&pecializes',                g:slimv_leader.'xp', g:slimv_leader.'xp',  ':call slimv#xrefSpecializes()<CR>' )
-" call s:MenuMap( 'Slim&v.&Xref.&List-Callers',                   g:slimv_leader.'xl', g:slimv_leader.'xl',  ':call slimv#xrefCallers()<CR>' )
-" call s:MenuMap( 'Slim&v.&Xref.List-Call&ees',                   g:slimv_leader.'xe', g:slimv_leader.'xe',  ':call slimv#xrefCallees()<CR>' )
+" call s:MenuMap( 'Slim&v.&Xref.Who-&Calls',                      g:slimv_leader.'xc', g:slimv_leader.'xc',  ':call slimv#xref#xrefCalls()<CR>' )
+" call s:MenuMap( 'Slim&v.&Xref.Who-&References',                 g:slimv_leader.'xr', g:slimv_leader.'xr',  ':call slimv#xref#xrefReferences()<CR>' )
+" call s:MenuMap( 'Slim&v.&Xref.Who-&Sets',                       g:slimv_leader.'xs', g:slimv_leader.'xs',  ':call slimv#xref#xrefSets()<CR>' )
+" call s:MenuMap( 'Slim&v.&Xref.Who-&Binds',                      g:slimv_leader.'xb', g:slimv_leader.'xb',  ':call slimv#xref#xrefBinds()<CR>' )
+" call s:MenuMap( 'Slim&v.&Xref.Who-&Macroexpands',               g:slimv_leader.'xm', g:slimv_leader.'xm',  ':call slimv#xref#xrefMacroexpands()<CR>' )
+" call s:MenuMap( 'Slim&v.&Xref.Who-S&pecializes',                g:slimv_leader.'xp', g:slimv_leader.'xp',  ':call slimv#xref#xrefSpecializes()<CR>' )
+" call s:MenuMap( 'Slim&v.&Xref.&List-Callers',                   g:slimv_leader.'xl', g:slimv_leader.'xl',  ':call slimv#xref#xrefCallers()<CR>' )
+" call s:MenuMap( 'Slim&v.&Xref.List-Call&ees',                   g:slimv_leader.'xe', g:slimv_leader.'xe',  ':call slimv#xref#xrefCallees()<CR>' )
 
 " " Profile commands
 " call s:MenuMap( 'Slim&v.&Profiling.Toggle-&Profile\.\.\.',      g:slimv_leader.'p',  g:slimv_leader.'pp',  ':<C-U>call slimv#profile()<CR>' )

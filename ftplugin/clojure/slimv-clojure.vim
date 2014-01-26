@@ -240,14 +240,14 @@ map <silent> [slimv]F :<C-U>call slimv#compileFile()<CR>
 map <silent> [slimv]R :call slimv#compileRegion()<CR>
 
 " Xref commands
-map <silent> [slimv]xc :call slimv#xrefCalls()<CR>
-map <silent> [slimv]xr :call slimv#xrefReferences()<CR>
-map <silent> [slimv]xs :call slimv#xrefSets()<CR>
-map <silent> [slimv]xb :call slimv#xrefBinds()<CR>
-map <silent> [slimv]xm :call slimv#xrefMacroexpands()<CR>
-map <silent> [slimv]xp :call slimv#xrefSpecializes()<CR>
-map <silent> [slimv]xl :call slimv#xrefCallers()<CR>
-map <silent> [slimv]xe :call slimv#xrefCallees()<CR>
+map <silent> [slimv]xc :call slimv#xref#xrefCalls()<CR>
+map <silent> [slimv]xr :call slimv#xref#xrefReferences()<CR>
+map <silent> [slimv]xs :call slimv#xref#xrefSets()<CR>
+map <silent> [slimv]xb :call slimv#xref#xrefBinds()<CR>
+map <silent> [slimv]xm :call slimv#xref#xrefMacroexpands()<CR>
+map <silent> [slimv]xp :call slimv#xref#xrefSpecializes()<CR>
+map <silent> [slimv]xl :call slimv#xref#xrefCallers()<CR>
+map <silent> [slimv]xe :call slimv#xref#xrefCallees()<CR>
 
 " Profile commands
 map <silent> [slimv]p :<C-U>call slimv#profile()<CR>
