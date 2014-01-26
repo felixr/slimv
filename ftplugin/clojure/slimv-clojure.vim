@@ -229,8 +229,8 @@ map <silent> [slimv]a :call slimv#debug#abort()<CR>
 map <silent> [slimv]q :call slimv#debug#quit()<CR>
 map <silent> [slimv]n :call slimv#debug#continue()<CR>
 map <silent> [slimv]N :call slimv#debug#restartFrame()<CR>
-map <silent> [slimv]H :call slimv#listThreads()<CR>
-map <silent> [slimv]K :call slimv#killThread()<CR>
+map <silent> [slimv]H :call slimv#thread#list()<CR>
+map <silent> [slimv]K :call slimv#thread#kill()<CR>
 map <silent> [slimv]G :call slimv#debug#thread()<CR>
 
 " Compile commands

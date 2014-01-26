@@ -283,20 +283,6 @@ endfunction
 
 
 
-" Open a new Threads buffer
-function slimv#openThreadsBuffer()
-    call slimv#buffer#open(g:slimv_threads_name )
-    let b:help = slimv#helpThreads()
-
-    " Add keybindings valid only for the Threads buffer
-    "noremap  <buffer> <silent>        <CR>   :call slimv#handleEnterThreads()<CR>
-    noremap  <buffer> <silent>        <F1>                        :call slimv#toggleHelp()<CR>
-    noremap  <buffer> <silent> <Backspace>                        :call slimv#killThread()<CR>
-    execute 'noremap <buffer> <silent> ' . g:slimv_leader.'r      :call slimv#listThreads()<CR>'
-    execute 'noremap <buffer> <silent> ' . g:slimv_leader.'d      :call slimv#debug#thread()<CR>'
-    execute 'noremap <buffer> <silent> ' . g:slimv_leader.'k      :call slimv#killThread()<CR>'
-    execute 'noremap <buffer> <silent> ' . g:slimv_leader.'q      :call slimv#quitThreads()<CR>'
-endfunction
 
 " Open a new SLDB buffer
 function slimv#openSldbBuffer()
@@ -344,15 +330,6 @@ function slimv#endUpdate()
     setlocal nomodified
 endfunction
 
-" Quit Threads
-function slimv#quitThreads()
-    " Clear the contents of the Threads buffer
-    setlocal modifiable
-    silent! %d
-    call slimv#endUpdate()
-    b #
-endfunction
-
 " Quit Sldb
 function slimv#quitSldb()
     " Clear the contents of the Sldb buffer
@@ -360,18 +337,6 @@ function slimv#quitSldb()
     silent! %d
     call slimv#endUpdate()
     b #
-endfunction
-"
-" Create help text for Threads buffer
-function slimv#helpThreads()
-    let help = []
-    call add( help, '<F1>        : toggle this help' )
-    call add( help, '<Backspace> : kill thread' )
-    call add( help, g:slimv_leader . 'k          : kill thread' )
-    call add( help, g:slimv_leader . 'd          : debug thread' )
-    call add( help, g:slimv_leader . 'r          : refresh' )
-    call add( help, g:slimv_leader . 'q          : quit' )
-    return help
 endfunction
 
 " Write help text to current buffer at given line
@@ -1525,41 +1490,6 @@ function! slimv#interrupt()
     call slimv#command( 'python swank_interrupt()' )
     call slimv#repl#refresh()
 endfunction
-" List current Lisp threads
-function! slimv#listThreads()
-    if slimv#connectSwank()
-        call slimv#command( 'python swank_list_threads()' )
-        call slimv#repl#refresh()
-    endif
-endfunction
-
-" Kill thread(s) selected from the Thread List
-function! slimv#killThread() range
-    if slimv#connectSwank()
-        if a:firstline == a:lastline
-            let line = getline('.')
-            let item = matchstr( line, '\d\+' )
-            if bufname('%') != g:slimv_threads_name
-                " We are not in the Threads buffer, not sure which thread to kill
-                let item = input( 'Thread to kill: ', item )
-            endif
-            if item != ''
-                call slimv#command( 'python swank_kill_thread(' . item . ')' )
-                call slimv#repl#refresh()
-            endif
-            echomsg 'Thread ' . item . ' is killed.'
-        else
-            for line in getline(a:firstline, a:lastline)
-                let item = matchstr( line, '\d\+' )
-                if item != ''
-                    call slimv#command( 'python swank_kill_thread(' . item . ')' )
-                endif
-            endfor
-            call slimv#repl#refresh()
-        endif
-        call slimv#listThreads()
-    endif
-endfunction
 
 function! slimv#rFunction()
     " search backwards for the alphanums before a '('
@@ -2427,8 +2357,8 @@ endfunction
 " call s:MenuMap( 'Slim&v.De&bugging.&Continue',                  g:slimv_leader.'n',  g:slimv_leader.'dc',  ':call slimv#debug#continue()<CR>' )
 " call s:MenuMap( 'Slim&v.De&bugging.&Restart-Frame',             g:slimv_leader.'N',  g:slimv_leader.'dr',  ':call slimv#debug#restartFrame()<CR>' )
 " call s:MenuMap( 'Slim&v.De&bugging.-ThreadSep-',                '',                  '',                   ':' )
-" call s:MenuMap( 'Slim&v.De&bugging.List-T&hreads',              g:slimv_leader.'H',  g:slimv_leader.'dl',  ':call slimv#listThreads()<CR>' )
-" call s:MenuMap( 'Slim&v.De&bugging.&Kill-Thread\.\.\.',         g:slimv_leader.'K',  g:slimv_leader.'dk',  ':call slimv#killThread()<CR>' )
+" call s:MenuMap( 'Slim&v.De&bugging.List-T&hreads',              g:slimv_leader.'H',  g:slimv_leader.'dl',  ':call slimv#thread#list()<CR>' )
+" call s:MenuMap( 'Slim&v.De&bugging.&Kill-Thread\.\.\.',         g:slimv_leader.'K',  g:slimv_leader.'dk',  ':call slimv#thread#kill()<CR>' )
 " call s:MenuMap( 'Slim&v.De&bugging.&Debug-Thread\.\.\.',        g:slimv_leader.'G',  g:slimv_leader.'dT',  ':call slimv#debug#thread()<CR>' )
 
 " " Compile commands

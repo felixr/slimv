@@ -147,7 +147,7 @@ def swank_parse_list_breakpoints(tl):
 
 
 def swank_parse_list_threads(swank, tl):
-    vim.command('call slimv#openThreadsBuffer()')
+    vim.command('call slimv#thread#open()')
     vim.command('setlocal modifiable')
     buf = vim.current.buffer
     buf[:] = ['Threads in pid '+swank.pid, '--------------------']
