@@ -26,35 +26,35 @@ function! slimv#repl#open()
     endif
 
     " Add keybindings valid only for the REPL buffer
-    inoremap <buffer> <silent>        <C-CR> <End><C-O>:call slimv#sendCommand(1)<CR>
+    inoremap <buffer> <silent>        <C-CR> <End><C-O>:call slimv#repl#sendCommand(1)<CR>
     inoremap <buffer> <silent>        <C-C>  <C-O>:call slimv#interrupt()<CR>
 
     if g:slimv_repl_simple_eval
-        inoremap <buffer> <silent>        <CR>     <C-R>=pumvisible() ? "\<lt>C-Y>"  : "\<lt>End>\<lt>C-O>:call slimv#sendCommand(0)\<lt>CR>"<CR>
-        inoremap <buffer> <silent>        <Up>     <C-R>=pumvisible() ? "\<lt>Up>"   : slimv#handleUp()<CR>
-        inoremap <buffer> <silent>        <Down>   <C-R>=pumvisible() ? "\<lt>Down>" : slimv#handleDown()<CR>
+        inoremap <buffer> <silent>        <CR>     <C-R>=pumvisible() ? "\<lt>C-Y>"  : "\<lt>End>\<lt>C-O>:call slimv#repl#sendCommand(0)\<lt>CR>"<CR>
+        inoremap <buffer> <silent>        <Up>     <C-R>=pumvisible() ? "\<lt>Up>"   : slimv#repl#handleUp()<CR>
+        inoremap <buffer> <silent>        <Down>   <C-R>=pumvisible() ? "\<lt>Down>" : slimv#repl#handleDown()<CR>
     else
-        inoremap <buffer> <silent>        <CR>     <C-R>=pumvisible() ? "\<lt>C-Y>"  : s:handleEnterRepl()<CR><C-R>=slimv#arglistOnEnter()<CR>
-        inoremap <buffer> <silent>        <C-Up>   <C-R>=pumvisible() ? "\<lt>Up>"   : slimv#handleUp()<CR>
-        inoremap <buffer> <silent>        <C-Down> <C-R>=pumvisible() ? "\<lt>Down>" : slimv#handleDown()<CR>
+        inoremap <buffer> <silent>        <CR>     <C-R>=pumvisible() ? "\<lt>C-Y>"  : slimv#repl#handleEnterRepl()<CR><C-R>=slimv#arglistOnEnter()<CR>
+        inoremap <buffer> <silent>        <C-Up>   <C-R>=pumvisible() ? "\<lt>Up>"   : slimv#repl#handleUp()<CR>
+        inoremap <buffer> <silent>        <C-Down> <C-R>=pumvisible() ? "\<lt>Down>" : slimv#repl#handleDown()<CR>
     endif
 
     if exists( 'g:paredit_loaded' )
         inoremap <buffer> <silent> <expr> <BS>   PareditBackspace(1)
     else
-        inoremap <buffer> <silent> <expr> <BS>   slimv#handleBS()
+        inoremap <buffer> <silent> <expr> <BS>   slimv#repl#handleBS()
     endif
 
     if g:slimv_keybindings == 1
-        execute 'noremap <buffer> <silent> ' . g:slimv_leader.'.      :call slimv#sendCommand(0)<CR>'
-        execute 'noremap <buffer> <silent> ' . g:slimv_leader.'/      :call slimv#sendCommand(1)<CR>'
+        execute 'noremap <buffer> <silent> ' . g:slimv_leader.'.      :call slimv#repl#sendCommand(0)<CR>'
+        execute 'noremap <buffer> <silent> ' . g:slimv_leader.'/      :call slimv#repl#sendCommand(1)<CR>'
         execute 'noremap <buffer> <silent> ' . g:slimv_leader.'<Up>   :call slimv#previousCommand()<CR>'
-        execute 'noremap <buffer> <silent> ' . g:slimv_leader.'<Down> :call slimv#nextCommand()<CR>'
+        execute 'noremap <buffer> <silent> ' . g:slimv_leader.'<Down> :call slimv#repl#nextCommand()<CR>'
     elseif g:slimv_keybindings == 2
-        execute 'noremap <buffer> <silent> ' . g:slimv_leader.'rs     :call slimv#sendCommand(0)<CR>'
-        execute 'noremap <buffer> <silent> ' . g:slimv_leader.'ro     :call slimv#sendCommand(1)<CR>'
+        execute 'noremap <buffer> <silent> ' . g:slimv_leader.'rs     :call slimv#repl#sendCommand(0)<CR>'
+        execute 'noremap <buffer> <silent> ' . g:slimv_leader.'ro     :call slimv#repl#sendCommand(1)<CR>'
         execute 'noremap <buffer> <silent> ' . g:slimv_leader.'rp     :call slimv#previousCommand()<CR>'
-        execute 'noremap <buffer> <silent> ' . g:slimv_leader.'rn     :call slimv#nextCommand()<CR>'
+        execute 'noremap <buffer> <silent> ' . g:slimv_leader.'rn     :call slimv#repl#nextCommand()<CR>'
     endif
 
     if g:slimv_repl_wrap
@@ -322,7 +322,7 @@ endif
 endfunction
 
 " Handle insert mode 'Enter' keypress in the REPL buffer
-function! s:handleEnterRepl()
+function! slimv#repl#handleEnterRepl()
     " Trim the prompt from the beginning of the command line
     " The user might have overwritten some parts of the prompt
     let lastline = s:GetPromptLine()
@@ -374,8 +374,222 @@ function! s:handleEnterRepl()
         if &virtualedit != 'all'
             call cursor( 0, 99999 )
         endif
-        call slimv#sendCommand(0)
+        call slimv#repl#sendCommand(0)
     endif
     return ''
 endfunction
 
+
+" Recall previous command from command history
+function! s:PreviousCommand()
+    if exists( 'g:slimv_cmdhistory' ) && g:slimv_cmdhistorypos > 0
+        call s:recallHistory( -1 )
+    endif
+endfunction
+
+" Recall next command from command history
+function! s:NextCommand()
+    if exists( 'g:slimv_cmdhistory' ) && g:slimv_cmdhistorypos < len( g:slimv_cmdhistory )
+        call s:recallHistory( 1 )
+    else
+        call s:setCommandLine( "" )
+    endif
+endfunction
+
+" Handle insert mode 'Up' keypress in the REPL buffer
+function! slimv#repl#handleUp()
+    let save_ve = &virtualedit
+    set virtualedit=onemore
+    if line( "." ) >= s:GetPromptLine()
+        call s:PreviousCommand()
+    else
+        normal! gk
+    endif
+    let &virtualedit=save_ve
+    return ''
+endfunction
+
+" Handle insert mode 'Down' keypress in the REPL buffer
+function! slimv#repl#handleDown()
+    let save_ve = &virtualedit
+    set virtualedit=onemore
+    if line( "." ) >= s:GetPromptLine()
+        call s:NextCommand()
+    else
+        normal! gj
+    endif
+    let &virtualedit=save_ve
+    return ''
+endfunction
+
+" Get REPL prompt line. Fix stored prompt position when corrupted
+" (e.g. some lines were deleted from the REPL buffer)
+function! s:GetPromptLine()
+    if b:repl_prompt_line > line( '$' )
+        " Stored prompt line is corrupt
+        let b:repl_prompt_line = line( '$' )
+        let b:repl_prompt_col = len( getline('$') ) + 1
+        let b:repl_prompt = getline( b:repl_prompt_line )
+    endif
+    return b:repl_prompt_line
+endfunction
+
+" Go to command line and recall next command from command history
+function! slimv#repl#nextCommand()
+    let save_ve = &virtualedit
+    set virtualedit=onemore
+    call slimv#repl#moveToEnd()
+    if line( "." ) >= s:GetPromptLine()
+        call s:NextCommand()
+    endif
+    let &virtualedit=save_ve
+endfunction
+
+" Send command line to REPL buffer
+" Arguments: close = add missing closing parens
+function! slimv#repl#sendCommand( close )
+    call slimv#refreshModeOn()
+    let lastline = s:GetPromptLine()
+    let lastcol  = b:repl_prompt_col
+    if lastline > 0
+        if line( "." ) >= lastline
+            " Trim the prompt from the beginning of the command line
+            " The user might have overwritten some parts of the prompt
+            let cmdline = getline( lastline )
+            let c = 0
+            while c < lastcol - 1 && cmdline[c] == b:repl_prompt[c]
+                let c = c + 1
+            endwhile
+            let cmd = [ strpart( getline( lastline ), c ) ]
+
+            " Build a possible multi-line command
+            let l = lastline + 1
+            while l <= line("$")
+                call add( cmd, strpart( getline( l ), 0) )
+                let l = l + 1
+            endwhile
+
+            " Count the number of opening and closing braces
+            let end = slimv#CloseForm( cmd )
+            if end == 'ERROR'
+                " Too many closing parens
+                call slimv#errorWait( "Too many or invalid closing parens found." )
+                return
+            endif
+            let echoing = 0
+            if a:close && end != ''
+                " Close form if necessary and evaluate it
+                let cmd[len(cmd)-1] = cmd[len(cmd)-1] . end
+                let end = ''
+                let echoing = 1
+            endif
+            if end == ''
+                " Expression finished, let's evaluate it
+                " but first add it to the history
+                call s:addHistory( cmd )
+                " Evaluate, but echo only when form is actually closed here
+                call slimv#send( cmd, echoing, 1 )
+            else
+                " Expression is not finished yet, indent properly and wait for completion
+                " Indentation works only if lisp indentation is switched on
+                call slimv#arglist()
+                let l = line('.') + 1
+                call append( '.', '' )
+                call setline( l, slimv#MakeIndent( slimv#indent(l) ) )
+                normal! j$
+            endif
+        endif
+    else
+        call append( '$', "Slimv error: previous EOF mark not found, re-enter last form:" )
+        call append( '$', "" )
+        call slimv#markBufferEnd()
+    endif
+endfunction
+
+" Handle insert mode 'Backspace' keypress in the REPL buffer
+function! slimv#repl#handleBS()
+    if line( "." ) == s:GetPromptLine() && col( "." ) <= b:repl_prompt_col
+        " No BS allowed before the previous EOF mark
+        return ""
+    else
+        return "\<BS>"
+    endif
+endfunction
+
+
+" Recall command from the command history at the marked position
+function! s:recallHistory( direction )
+    let searchtext = ''
+    let l = line( '.' )
+    let c = col( '.' )
+    let set_cursor_pos = 0
+    if line( '.' ) == s:GetPromptLine() && c > b:repl_prompt_col
+        " Search for lines beginning with the text up to the cursor position
+        let searchtext = strpart( getline('.'), b:repl_prompt_col-1, c-b:repl_prompt_col )
+        let searchtext = substitute( searchtext, '^\s*\(.*[^ ]\)', '\1', 'g' )
+    endif
+    let historypos = g:slimv_cmdhistorypos
+    let g:slimv_cmdhistorypos = g:slimv_cmdhistorypos + a:direction
+    while g:slimv_cmdhistorypos >= 0 && g:slimv_cmdhistorypos < len( g:slimv_cmdhistory )
+        let cmd = g:slimv_cmdhistory[g:slimv_cmdhistorypos]
+        if len(cmd) >= len(searchtext) && strpart(cmd, 0, len(searchtext)) == searchtext
+            call s:setCommandLine( g:slimv_cmdhistory[g:slimv_cmdhistorypos] )
+            return
+        endif
+        let g:slimv_cmdhistorypos = g:slimv_cmdhistorypos + a:direction
+    endwhile
+    if searchtext == ''
+        call s:setCommandLine( "" )
+    else
+        let g:slimv_cmdhistorypos = historypos
+    endif
+endfunction
+
+
+" Add command list to the command history
+function! s:addHistory( cmd )
+    if !exists( 'g:slimv_cmdhistory' )
+        let g:slimv_cmdhistory = []
+    endif
+    let i = 0
+    let form = join( a:cmd, "\n" )
+    " Trim leading and trailing whitespaces from the command
+    let form = substitute( form, '^\s*\(.*[^ ]\)\s*', '\1', 'g' )
+    if len( form ) > 1 || len( g:slimv_cmdhistory ) == 0 || form != g:slimv_cmdhistory[-1]
+        " Add command only if differs from the last one
+        call add( g:slimv_cmdhistory, form )
+    endif
+    let g:slimv_cmdhistorypos = len( g:slimv_cmdhistory )
+endfunction
+
+
+" Set command line after the prompt
+function! s:setCommandLine( cmd )
+    let line = getline( "." )
+    if line( "." ) == s:GetPromptLine()
+        " The prompt is in the line marked by b:repl_prompt_line
+        let promptlen = len( b:repl_prompt )
+    else
+        let promptlen = 0
+    endif
+    if len( line ) > promptlen
+        let line = strpart( line, 0, promptlen )
+    endif
+
+    if s:GetPromptLine() < line( '$' )
+        " Delete extra lines after the prompt
+        let c = col( '.' )
+        execute (s:GetPromptLine()+1) . ',' . (line('$')) . 'd_'
+        call cursor( line('.'), c )
+    endif
+
+    let lines = split( a:cmd, '\n' )
+    if len(lines) > 0
+        let line = line . lines[0]
+    endif
+    call setline( ".", line )
+    if len(lines) > 1
+        call append( s:GetPromptLine(), lines[1:] )
+    endif
+    set nomodified
+endfunction

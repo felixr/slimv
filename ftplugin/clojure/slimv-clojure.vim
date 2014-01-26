@@ -221,7 +221,10 @@ map <silent> [slimv]1 :<C-U>call slimv#macroexpand()<CR>
 map <silent> [slimv]m :<C-U>call slimv#macroexpandAll()<CR>
 map <silent> [slimv]t :call slimv#trace()<CR>
 map <silent> [slimv]T :call slimv#untrace()<CR>
-map <silent> [slimv]B :call slimv#break()<CR>
+" map <silent> [slimv]B :call slimv#break()<CR>
+map <silent> [slimv]B :call slimv#commandUsePackage("python swank_line_breakpoint()")<cr>
+map <silent> [slimv]V :python swank_list_breakpoints()<cr>
+
 map <silent> [slimv]E :call slimv#breakOnException()<CR>
 map <silent> [slimv]l :call slimv#disassemble()<CR>
 map <silent> [slimv]i :call slimv#inspect()<CR>

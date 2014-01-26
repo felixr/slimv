@@ -85,11 +85,11 @@ endfunction
 
 
 " Open a new SLDB buffer
-function slimv#debug#openSldb()
+function! slimv#debug#openSldb()
     call slimv#buffer#open( g:slimv_sldb_name )
 
     " Add keybindings valid only for the SLDB buffer
-    noremap  <buffer> <silent>        <CR>   :call s:handleEnterSldb()<CR>
+    noremap  <buffer> <silent>        <CR>   :call slimv#debug#handleEnterSldb()<CR>
     if g:slimv_keybindings == 1
         execute 'noremap <buffer> <silent> ' . g:slimv_leader.'a      :call slimv#debug#abort()<CR>'
         execute 'noremap <buffer> <silent> ' . g:slimv_leader.'q      :call slimv#debug#quit()<CR>'
@@ -106,7 +106,7 @@ function slimv#debug#openSldb()
     setlocal foldmethod=marker
     setlocal foldmarker={{{,}}}
     setlocal foldtext=substitute(getline(v:foldstart),'{{{','','')
-    call s:SetKeyword()
+    call slimv#SetKeyword()
     if g:slimv_sldb_wrap
         setlocal wrap
     endif
@@ -125,7 +125,7 @@ function slimv#debug#openSldb()
 endfunction
 
 " Quit Sldb
-function slimv#debug#quitSldb()
+function! slimv#debug#quitSldb()
     " Clear the contents of the Sldb buffer
     setlocal modifiable
     silent! %d
@@ -134,9 +134,10 @@ function slimv#debug#quitSldb()
 endfunction
 
 " Handle normal mode 'Enter' keypress in the SLDB buffer
-function! s:handleEnterSldb()
+function! slimv#debug#handleEnterSldb()
     let line = getline('.')
-    if s:ctx.sldb_level >= 0
+    let ctx = slimv#context()
+    if ctx.sldb_level >= 0
         " Check if Enter was pressed in a section printed by the SWANK debugger
         " The source specification is within a fold, so it has to be tested first
         let mlist = matchlist( line, '^\s\+in "\(.*\)" \(line\|byte\) \(\d\+\)$' )
@@ -158,7 +159,7 @@ function! s:handleEnterSldb()
             normal za
             return
         endif
-        let item = matchstr( line, s:ctx.frame_def )
+        let item = matchstr( line, ctx.frame_def )
         if item != ''
             let item = substitute( item, '\s\|:', '', 'g' )
             if search( '^Backtrace:', 'bnW' ) > 0
@@ -179,7 +180,7 @@ function! s:handleEnterSldb()
             if search( '^Restarts:', 'bnW' ) > 0
                 " Apply item-th restart
                 call slimv#debug#quitSldb()
-                silent execute 'python swank_invoke_restart("' . s:ctx.sldb_level . '", "' . item . '")'
+                silent execute 'python swank_invoke_restart("' . ctx.sldb_level . '", "' . item . '")'
                 call slimv#repl#refresh()
                 return
             endif

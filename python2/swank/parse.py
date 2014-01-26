@@ -122,14 +122,15 @@ def swank_parse_xref(struct):
         buf = buf + unquote(e[0]) + ' - ' + parse_location(e[1]) + '\n'
     return buf
 
+
 def swank_parse_list_breakpoints(tl):
     vim.command('call slimv#buffer#open("BREAKPOINTS")')
     vim.command('setlocal modifiable')
     buf = vim.current.buffer
-    # buf[:] = ['Threads in pid '+pid, '--------------------']
+    buf[:] = ['Breakpoints', '--------------------']
     # vim.command('call slimv#buffer#help(2)')
-    # buf.append(['', 'Idx  ID      Status         Name                           Priority', \
-    #                 '---- ------  ------------   ----------------------------   ---------'])
+    buf.append(['', 'Idx  ID  File                         Line  Enbled?', \
+                    '---- --- ---------------------------- ----- -------'])
     vim.command('normal! G0')
     lst = tl[1]
     headers = lst.pop(0)
@@ -140,7 +141,7 @@ def swank_parse_list_breakpoints(tl):
         # ((:id :file :line :enabled)
         state = unquote(t[2])
         name = unquote(t[1])
-        buf.append(["%3d:  %s %s %s %s" % (idx, t[0], t[1], t[2], t[3])])
+        buf.append(["%3d: %3s %20s %6s %s" % (idx, t[0], t[1], t[2], t[3])])
         idx = idx + 1
     vim.command('normal! j')
     vim.command('call slimv#endUpdate()')

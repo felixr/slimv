@@ -304,7 +304,7 @@ function slimv#gotoFrame( frame )
 endfunction
 
 " Set 'iskeyword' option depending on file type
-function! s:SetKeyword()
+function! slimv#SetKeyword()
     if slimv#getFiletype() =~ '.*\(clojure\|scheme\|racket\).*'
         setlocal iskeyword+=+,-,*,/,%,<,=,>,:,$,?,!,@-@,94,~,#,\|,&
     else
@@ -314,7 +314,7 @@ endfunction
 
 " Select symbol under cursor and return it
 function! slimv#selectSymbol()
-    call s:SetKeyword()
+    call slimv#SetKeyword()
     let oldpos = winsaveview()
     if col('.') > 1 && getline('.')[col('.')-1] =~ '\s'
         normal! h
@@ -327,7 +327,7 @@ endfunction
 " Select symbol with possible prefixes under cursor and return it
 function! slimv#selectSymbolExt()
     let save_iskeyword = &iskeyword
-    call s:SetKeyword()
+    call slimv#SetKeyword()
     setlocal iskeyword+='
     let symbol = expand('<cword>')
     let &iskeyword = save_iskeyword
@@ -594,81 +594,6 @@ endfunction
 " Send argument silently to SWANK
 function! slimv#sendSilent( args )
     call slimv#send( a:args, 0, 0 )
-endfunction
-
-" Set command line after the prompt
-function! slimv#setCommandLine( cmd )
-    let line = getline( "." )
-    if line( "." ) == s:GetPromptLine()
-        " The prompt is in the line marked by b:repl_prompt_line
-        let promptlen = len( b:repl_prompt )
-    else
-        let promptlen = 0
-    endif
-    if len( line ) > promptlen
-        let line = strpart( line, 0, promptlen )
-    endif
-
-    if s:GetPromptLine() < line( '$' )
-        " Delete extra lines after the prompt
-        let c = col( '.' )
-        execute (s:GetPromptLine()+1) . ',' . (line('$')) . 'd_'
-        call cursor( line('.'), c )
-    endif
-
-    let lines = split( a:cmd, '\n' )
-    if len(lines) > 0
-        let line = line . lines[0]
-    endif
-    call setline( ".", line )
-    if len(lines) > 1
-        call append( s:GetPromptLine(), lines[1:] )
-    endif
-    set nomodified
-endfunction
-
-" Add command list to the command history
-function! slimv#addHistory( cmd )
-    if !exists( 'g:slimv_cmdhistory' )
-        let g:slimv_cmdhistory = []
-    endif
-    let i = 0
-    let form = join( a:cmd, "\n" )
-    " Trim leading and trailing whitespaces from the command
-    let form = substitute( form, '^\s*\(.*[^ ]\)\s*', '\1', 'g' )
-    if len( form ) > 1 || len( g:slimv_cmdhistory ) == 0 || form != g:slimv_cmdhistory[-1]
-        " Add command only if differs from the last one
-        call add( g:slimv_cmdhistory, form )
-    endif
-    let g:slimv_cmdhistorypos = len( g:slimv_cmdhistory )
-endfunction
-
-" Recall command from the command history at the marked position
-function! slimv#recallHistory( direction )
-    let searchtext = ''
-    let l = line( '.' )
-    let c = col( '.' )
-    let set_cursor_pos = 0
-    if line( '.' ) == s:GetPromptLine() && c > b:repl_prompt_col
-        " Search for lines beginning with the text up to the cursor position
-        let searchtext = strpart( getline('.'), b:repl_prompt_col-1, c-b:repl_prompt_col )
-        let searchtext = substitute( searchtext, '^\s*\(.*[^ ]\)', '\1', 'g' )
-    endif
-    let historypos = g:slimv_cmdhistorypos
-    let g:slimv_cmdhistorypos = g:slimv_cmdhistorypos + a:direction
-    while g:slimv_cmdhistorypos >= 0 && g:slimv_cmdhistorypos < len( g:slimv_cmdhistory )
-        let cmd = g:slimv_cmdhistory[g:slimv_cmdhistorypos]
-        if len(cmd) >= len(searchtext) && strpart(cmd, 0, len(searchtext)) == searchtext
-            call slimv#setCommandLine( g:slimv_cmdhistory[g:slimv_cmdhistorypos] )
-            return
-        endif
-        let g:slimv_cmdhistorypos = g:slimv_cmdhistorypos + a:direction
-    endwhile
-    if searchtext == ''
-        call slimv#setCommandLine( "" )
-    else
-        let g:slimv_cmdhistorypos = historypos
-    endif
 endfunction
 
 " Return missing parens, double quotes, etc to properly close form
@@ -1032,67 +957,6 @@ function! slimv#MakeIndent( indent )
     endif
 endfunction
 
-" Send command line to REPL buffer
-" Arguments: close = add missing closing parens
-function! slimv#sendCommand( close )
-    call slimv#refreshModeOn()
-    let lastline = s:GetPromptLine()
-    let lastcol  = b:repl_prompt_col
-    if lastline > 0
-        if line( "." ) >= lastline
-            " Trim the prompt from the beginning of the command line
-            " The user might have overwritten some parts of the prompt
-            let cmdline = getline( lastline )
-            let c = 0
-            while c < lastcol - 1 && cmdline[c] == b:repl_prompt[c]
-                let c = c + 1
-            endwhile
-            let cmd = [ strpart( getline( lastline ), c ) ]
-
-            " Build a possible multi-line command
-            let l = lastline + 1
-            while l <= line("$")
-                call add( cmd, strpart( getline( l ), 0) )
-                let l = l + 1
-            endwhile
-
-            " Count the number of opening and closing braces
-            let end = slimv#CloseForm( cmd )
-            if end == 'ERROR'
-                " Too many closing parens
-                call slimv#errorWait( "Too many or invalid closing parens found." )
-                return
-            endif
-            let echoing = 0
-            if a:close && end != ''
-                " Close form if necessary and evaluate it
-                let cmd[len(cmd)-1] = cmd[len(cmd)-1] . end
-                let end = ''
-                let echoing = 1
-            endif
-            if end == ''
-                " Expression finished, let's evaluate it
-                " but first add it to the history
-                call slimv#addHistory( cmd )
-                " Evaluate, but echo only when form is actually closed here
-                call slimv#send( cmd, echoing, 1 )
-            else
-                " Expression is not finished yet, indent properly and wait for completion
-                " Indentation works only if lisp indentation is switched on
-                call slimv#arglist()
-                let l = line('.') + 1
-                call append( '.', '' )
-                call setline( l, slimv#MakeIndent( slimv#indent(l) ) )
-                normal! j$
-            endif
-        endif
-    else
-        call append( '$', "Slimv error: previous EOF mark not found, re-enter last form:" )
-        call append( '$', "" )
-        call slimv#markBufferEnd()
-    endif
-endfunction
-
 " Close current top level form by adding the missing parens
 function! slimv#closeForm()
     let l2 = line( '.' )
@@ -1181,58 +1045,6 @@ function! slimv#handleTab()
     return "\<Tab>"
 endfunction
 
-" Handle insert mode 'Backspace' keypress in the REPL buffer
-function! slimv#handleBS()
-    if line( "." ) == s:GetPromptLine() && col( "." ) <= b:repl_prompt_col
-        " No BS allowed before the previous EOF mark
-        return ""
-    else
-        return "\<BS>"
-    endif
-endfunction
-
-" Recall previous command from command history
-function! s:PreviousCommand()
-    if exists( 'g:slimv_cmdhistory' ) && g:slimv_cmdhistorypos > 0
-        call slimv#recallHistory( -1 )
-    endif
-endfunction
-
-" Recall next command from command history
-function! s:NextCommand()
-    if exists( 'g:slimv_cmdhistory' ) && g:slimv_cmdhistorypos < len( g:slimv_cmdhistory )
-        call slimv#recallHistory( 1 )
-    else
-        call slimv#setCommandLine( "" )
-    endif
-endfunction
-
-" Handle insert mode 'Up' keypress in the REPL buffer
-function! slimv#handleUp()
-    let save_ve = &virtualedit
-    set virtualedit=onemore
-    if line( "." ) >= s:GetPromptLine()
-        call s:PreviousCommand()
-    else
-        normal! gk
-    endif
-    let &virtualedit=save_ve
-    return ''
-endfunction
-
-" Handle insert mode 'Down' keypress in the REPL buffer
-function! slimv#handleDown()
-    let save_ve = &virtualedit
-    set virtualedit=onemore
-    if line( "." ) >= s:GetPromptLine()
-        call s:NextCommand()
-    else
-        normal! gj
-    endif
-    let &virtualedit=save_ve
-    return ''
-endfunction
-
 " Make a fold at the cursor point in the current buffer
 function slimv#makeFold()
     setlocal modifiable
@@ -1248,18 +1060,6 @@ function s:EndOfBuffer()
     if &virtualedit != 'all'
         call cursor( line('$'), 99999 )
     endif
-endfunction
-
-" Get REPL prompt line. Fix stored prompt position when corrupted
-" (e.g. some lines were deleted from the REPL buffer)
-function! s:GetPromptLine()
-    if b:repl_prompt_line > line( '$' )
-        " Stored prompt line is corrupt
-        let b:repl_prompt_line = line( '$' )
-        let b:repl_prompt_col = len( getline('$') ) + 1
-        let b:repl_prompt = getline( b:repl_prompt_line )
-    endif
-    return b:repl_prompt_line
 endfunction
 
 
@@ -1278,17 +1078,6 @@ function slimv#SwitchToWindow( id )
             execute winnr . "wincmd w"
         endif
     endfor
-endfunction
-
-" Go to command line and recall next command from command history
-function! slimv#nextCommand()
-    let save_ve = &virtualedit
-    set virtualedit=onemore
-    call slimv#repl#moveToEnd()
-    if line( "." ) >= s:GetPromptLine()
-        call s:NextCommand()
-    endif
-    let &virtualedit=save_ve
 endfunction
 
 " Handle interrupt (Ctrl-C) keypress in the REPL buffer
@@ -1336,7 +1125,7 @@ function! slimv#arglist( ... )
             let c = c - 1
         endif
     endif
-    call s:SetKeyword()
+    call slimv#SetKeyword()
     if s:ctx.swank_connected && c > 0 && line[c-1] =~ '\k\|)\|\]\|}\|"'
         " Display only if entering the first space after a keyword
         let arg = ''
@@ -1959,7 +1748,7 @@ endfunction
 function! slimv#omniComplete( findstart, base )
     if a:findstart
         " Locate the start of the symbol name
-        call s:SetKeyword()
+        call slimv#SetKeyword()
         let upto = strpart( getline( '.' ), 0, col( '.' ) - 1)
         return match(upto, '\k\+$')
     else
@@ -1975,7 +1764,7 @@ endif
 " Complete function for user-defined commands
 function! slimv#commandComplete( arglead, cmdline, cursorpos )
     " Locate the start of the symbol name
-    call s:SetKeyword()
+    call slimv#SetKeyword()
     let upto = strpart( a:cmdline, 0, a:cursorpos )
     let base = matchstr(upto, '\k\+$')
     let ext  = matchstr(upto, '\S*\k\+$')
