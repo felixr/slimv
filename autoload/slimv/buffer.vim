@@ -72,3 +72,30 @@ function! slimv#buffer#open( name )
     setlocal modifiable
 endfunction
 
+" Write help text to current buffer at given line
+function slimv#buffer#help( line )
+    setlocal modifiable
+    if exists( 'b:help_shown' )
+        let help = b:help
+    else
+        let help = ['Press <F1> for Help']
+    endif
+    let b:help_line = a:line
+    call append( b:help_line, help )
+endfunction
+
+" Toggle help
+function slimv#buffer#toggleHelp()
+    if exists( 'b:help_shown' )
+        let lines = len( b:help )
+        unlet b:help_shown
+    else
+        let lines = 1
+        let b:help_shown = 1
+    endif
+    setlocal modifiable
+    execute ":" . (b:help_line+1) . "," . (b:help_line+lines) . "d"
+    call slimv#buffer#help( b:help_line )
+    call slimv#endUpdate()
+endfunction
+

@@ -53,7 +53,7 @@ function slimv#thread#open()
 
     " Add keybindings valid only for the Threads buffer
     "noremap  <buffer> <silent>        <CR>   :call slimv#handleEnterThreads()<CR>
-    noremap  <buffer> <silent>        <F1>                        :call slimv#toggleHelp()<CR>
+    noremap  <buffer> <silent>        <F1>                        :call slimv#buffer#toggleHelp()<CR>
     noremap  <buffer> <silent> <Backspace>                        :call slimv#thread#kill()<CR>
     execute 'noremap <buffer> <silent> ' . g:slimv_leader.'r      :call slimv#thread#list()<CR>'
     execute 'noremap <buffer> <silent> ' . g:slimv_leader.'d      :call slimv#debug#thread()<CR>'

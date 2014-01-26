@@ -13,7 +13,7 @@ function! slimv#repl#open()
     call slimv#buffer#open( g:slimv_repl_name )
     call b:SlimvInitRepl()
     if g:slimv_repl_syntax
-        call slimv#repl#setSyntax()
+        call s:setSyntax()
     else
         set syntax=
     endif
@@ -34,7 +34,7 @@ function! slimv#repl#open()
         inoremap <buffer> <silent>        <Up>     <C-R>=pumvisible() ? "\<lt>Up>"   : slimv#handleUp()<CR>
         inoremap <buffer> <silent>        <Down>   <C-R>=pumvisible() ? "\<lt>Down>" : slimv#handleDown()<CR>
     else
-        inoremap <buffer> <silent>        <CR>     <C-R>=pumvisible() ? "\<lt>C-Y>"  : slimv#handleEnterRepl()<CR><C-R>=slimv#arglistOnEnter()<CR>
+        inoremap <buffer> <silent>        <CR>     <C-R>=pumvisible() ? "\<lt>C-Y>"  : s:handleEnterRepl()<CR><C-R>=slimv#arglistOnEnter()<CR>
         inoremap <buffer> <silent>        <C-Up>   <C-R>=pumvisible() ? "\<lt>Up>"   : slimv#handleUp()<CR>
         inoremap <buffer> <silent>        <C-Down> <C-R>=pumvisible() ? "\<lt>Down>" : slimv#handleDown()<CR>
     endif
@@ -224,7 +224,7 @@ endfunction
 
 
 " Set special syntax rules for the REPL buffer
-function! slimv#repl#setSyntax()
+function! s:setSyntax()
     if slimv#getFiletype() == 'scheme'
         syn cluster replListCluster contains=@schemeListCluster,lispList
     else
@@ -320,3 +320,62 @@ endif
     syn match   replPrompt /^(\S\+)>/
     hi def link replPrompt Type
 endfunction
+
+" Handle insert mode 'Enter' keypress in the REPL buffer
+function! s:handleEnterRepl()
+    " Trim the prompt from the beginning of the command line
+    " The user might have overwritten some parts of the prompt
+    let lastline = s:GetPromptLine()
+    let lastcol  = b:repl_prompt_col
+    let cmdline = getline( lastline )
+    let c = 0
+    while c < lastcol - 1 && cmdline[c] == b:repl_prompt[c]
+        let c = c + 1
+    endwhile
+
+    " Copy command line up to the cursor position
+    if line(".") == lastline
+        let cmd = [ strpart( cmdline, c, col(".") - c - 1 ) ]
+    else
+        let cmd = [ strpart( cmdline, c ) ]
+    endif
+
+    " Build a possible multi-line command up to the cursor line/position
+    let l = lastline + 1
+    while l <= line(".")
+        if line(".") == l
+            call add( cmd, strpart( getline( l ), 0, col(".") - 1) )
+        else
+            call add( cmd, strpart( getline( l ), 0) )
+        endif
+        let l = l + 1
+    endwhile
+
+    " Count the number of opening and closing braces in the command before the cursor
+    let end = slimv#CloseForm( cmd )
+    if end != 'ERROR' && end != ''
+        " Command part before cursor is unbalanced, insert newline
+        let s:ctx.arglist_line = line('.')
+        let s:ctx.arglist_col = col('.')
+        if pumvisible()
+            " Pressing <CR> in a pop up selects entry.
+            return "\<C-Y>"
+        else
+            if exists( 'g:paredit_mode' ) && g:paredit_mode && g:paredit_electric_return && lastline > 0 && line( "." ) >= lastline
+                " Apply electric return
+                return PareditEnter()
+            else
+                " No electric return handling, just enter a newline
+                return "\<CR>"
+            endif
+        endif
+    else
+        " Send current command line for evaluation
+        if &virtualedit != 'all'
+            call cursor( 0, 99999 )
+        endif
+        call slimv#sendCommand(0)
+    endif
+    return ''
+endfunction
+

@@ -78,7 +78,7 @@ def swank_parse_inspect(struct):
     vim.command('let b:inspect_title="' + title + '"')
     buf[:] = ['Inspecting ' + title, '--------------------', '']
     vim.command('normal! 3G0')
-    vim.command('call slimv#help(2)')
+    vim.command('call slimv#buffer#help(2)')
     pcont = parse_plist(struct, ':content')
     inspect_lines = 3
     inspect_newline = True
@@ -89,7 +89,7 @@ def swank_parse_debug(struct):
     """
     Parse the SLDB output
     """
-    vim.command('call slimv#openSldbBuffer()')
+    vim.command('call slimv#debug#openSldb()')
     vim.command('setlocal modifiable')
     buf = vim.current.buffer
     [thread, level, condition, restarts, frames, conts] = struct[1:7]
@@ -127,7 +127,7 @@ def swank_parse_list_breakpoints(tl):
     vim.command('setlocal modifiable')
     buf = vim.current.buffer
     # buf[:] = ['Threads in pid '+pid, '--------------------']
-    # vim.command('call slimv#help(2)')
+    # vim.command('call slimv#buffer#help(2)')
     # buf.append(['', 'Idx  ID      Status         Name                           Priority', \
     #                 '---- ------  ------------   ----------------------------   ---------'])
     vim.command('normal! G0')
@@ -151,7 +151,7 @@ def swank_parse_list_threads(swank, tl):
     vim.command('setlocal modifiable')
     buf = vim.current.buffer
     buf[:] = ['Threads in pid '+swank.pid, '--------------------']
-    vim.command('call slimv#help(2)')
+    vim.command('call slimv#buffer#help(2)')
     buf.append(['', 'Idx  ID      Status         Name                           Priority', \
                     '---- ------  ------------   ----------------------------   ---------'])
     vim.command('normal! G0')

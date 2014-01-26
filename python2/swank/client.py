@@ -448,7 +448,7 @@ class SwankSocket(object):
             vim.command('call slimv#repl#endUpdate()')
         if self.debug_activated and self.debug_active:
             # Debugger was activated in this run
-            vim.command('call slimv#openSldbBuffer()')
+            vim.command('call slimv#debug#openSldb()')
             vim.command('call slimv#endUpdate()')
             vim.command("call search('^Restarts:', 'w')")
 

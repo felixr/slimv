@@ -7,7 +7,7 @@ function slimv#inspect#open()
     let b:help = slimv#inspect#help()
 
     " Add keybindings valid only for the Inspect buffer
-    noremap  <buffer> <silent>        <F1>   :call slimv#toggleHelp()<CR>
+    noremap  <buffer> <silent>        <F1>   :call slimv#buffer#toggleHelp()<CR>
     noremap  <buffer> <silent>        <CR>   :call slimv#inspect#handleEnter()<CR>
     noremap  <buffer> <silent> <Backspace>   :call slimv#sendSilent(['[-1]'])<CR>
     execute 'noremap <buffer> <silent> ' . g:slimv_leader.'q      :call slimv#inspect#quit(1)<CR>'

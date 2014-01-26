@@ -281,94 +281,15 @@ function! slimv#refreshModeOff()
     augroup END
 endfunction
 
-
-
-
-" Open a new SLDB buffer
-function slimv#openSldbBuffer()
-    call slimv#buffer#open( g:slimv_sldb_name )
-
-    " Add keybindings valid only for the SLDB buffer
-    noremap  <buffer> <silent>        <CR>   :call slimv#handleEnterSldb()<CR>
-    if g:slimv_keybindings == 1
-        execute 'noremap <buffer> <silent> ' . g:slimv_leader.'a      :call slimv#debug#abort()<CR>'
-        execute 'noremap <buffer> <silent> ' . g:slimv_leader.'q      :call slimv#debug#quit()<CR>'
-        execute 'noremap <buffer> <silent> ' . g:slimv_leader.'n      :call slimv#debug#continue()<CR>'
-        execute 'noremap <buffer> <silent> ' . g:slimv_leader.'N      :call slimv#debug#restartFrame()<CR>'
-    elseif g:slimv_keybindings == 2
-        execute 'noremap <buffer> <silent> ' . g:slimv_leader.'da     :call slimv#debug#abort()<CR>'
-        execute 'noremap <buffer> <silent> ' . g:slimv_leader.'dq     :call slimv#debug#quit()<CR>'
-        execute 'noremap <buffer> <silent> ' . g:slimv_leader.'dn     :call slimv#debug#continue()<CR>'
-        execute 'noremap <buffer> <silent> ' . g:slimv_leader.'dr     :call slimv#debug#restartFrame()<CR>'
-    endif
-
-    " Set folding parameters
-    setlocal foldmethod=marker
-    setlocal foldmarker={{{,}}}
-    setlocal foldtext=substitute(getline(v:foldstart),'{{{','','')
-    call s:SetKeyword()
-    if g:slimv_sldb_wrap
-        setlocal wrap
-    endif
-
-    if version < 703
-        " conceal mechanism is defined since Vim 7.3
-        syn match Ignore /{{{/
-        syn match Ignore /}}}/
-    else
-        setlocal conceallevel=3 concealcursor=nc
-        syn match Comment /{{{/ conceal
-        syn match Comment /}}}/ conceal
-    endif
-    syn match Type /^\s\{0,2}\d\{1,3}:/
-    syn match Type /^\s\+in "\(.*\)" \(line\|byte\) \(\d\+\)$/
-endfunction
-
 " End updating an otherwise readonly buffer
 function slimv#endUpdate()
     setlocal nomodifiable
     setlocal nomodified
 endfunction
-
-" Quit Sldb
-function slimv#quitSldb()
-    " Clear the contents of the Sldb buffer
-    setlocal modifiable
-    silent! %d
-    call slimv#endUpdate()
-    b #
-endfunction
-
-" Write help text to current buffer at given line
-function slimv#help( line )
-    setlocal modifiable
-    if exists( 'b:help_shown' )
-        let help = b:help
-    else
-        let help = ['Press <F1> for Help']
-    endif
-    let b:help_line = a:line
-    call append( b:help_line, help )
-endfunction
-
-" Toggle help
-function slimv#toggleHelp()
-    if exists( 'b:help_shown' )
-        let lines = len( b:help )
-        unlet b:help_shown
-    else
-        let lines = 1
-        let b:help_shown = 1
-    endif
-    setlocal modifiable
-    execute ":" . (b:help_line+1) . "," . (b:help_line+lines) . "d"
-    call slimv#help( b:help_line )
-    call slimv#endUpdate()
-endfunction
-
+"
 " Open SLDB buffer and place cursor on the given frame
 function slimv#gotoFrame( frame )
-    call slimv#openSldbBuffer()
+    call slimv#debug#openSldb()
     let bcktrpos = search( '^Backtrace:', 'bcnw' )
     let line = getline( '.' )
     let item = matchstr( line, '^\s*' . a:frame .  ':' )
@@ -1317,121 +1238,6 @@ function slimv#makeFold()
     setlocal modifiable
     normal! o    }}}kA {{{0
     setlocal nomodifiable
-endfunction
-
-" Handle insert mode 'Enter' keypress in the REPL buffer
-function! slimv#handleEnterRepl()
-    " Trim the prompt from the beginning of the command line
-    " The user might have overwritten some parts of the prompt
-    let lastline = s:GetPromptLine()
-    let lastcol  = b:repl_prompt_col
-    let cmdline = getline( lastline )
-    let c = 0
-    while c < lastcol - 1 && cmdline[c] == b:repl_prompt[c]
-        let c = c + 1
-    endwhile
-
-    " Copy command line up to the cursor position
-    if line(".") == lastline
-        let cmd = [ strpart( cmdline, c, col(".") - c - 1 ) ]
-    else
-        let cmd = [ strpart( cmdline, c ) ]
-    endif
-
-    " Build a possible multi-line command up to the cursor line/position
-    let l = lastline + 1
-    while l <= line(".")
-        if line(".") == l
-            call add( cmd, strpart( getline( l ), 0, col(".") - 1) )
-        else
-            call add( cmd, strpart( getline( l ), 0) )
-        endif
-        let l = l + 1
-    endwhile
-
-    " Count the number of opening and closing braces in the command before the cursor
-    let end = slimv#CloseForm( cmd )
-    if end != 'ERROR' && end != ''
-        " Command part before cursor is unbalanced, insert newline
-        let s:ctx.arglist_line = line('.')
-        let s:ctx.arglist_col = col('.')
-        if pumvisible()
-            " Pressing <CR> in a pop up selects entry.
-            return "\<C-Y>"
-        else
-            if exists( 'g:paredit_mode' ) && g:paredit_mode && g:paredit_electric_return && lastline > 0 && line( "." ) >= lastline
-                " Apply electric return
-                return PareditEnter()
-            else
-                " No electric return handling, just enter a newline
-                return "\<CR>"
-            endif
-        endif
-    else
-        " Send current command line for evaluation
-        if &virtualedit != 'all'
-            call cursor( 0, 99999 )
-        endif
-        call slimv#sendCommand(0)
-    endif
-    return ''
-endfunction
-
-" Handle normal mode 'Enter' keypress in the SLDB buffer
-function! slimv#handleEnterSldb()
-    let line = getline('.')
-    if s:ctx.sldb_level >= 0
-        " Check if Enter was pressed in a section printed by the SWANK debugger
-        " The source specification is within a fold, so it has to be tested first
-        let mlist = matchlist( line, '^\s\+in "\(.*\)" \(line\|byte\) \(\d\+\)$' )
-        if len(mlist)
-            if g:slimv_repl_split
-                " Switch back to other window
-                execute "wincmd p"
-            endif
-            " Jump to the file at the specified position
-            if mlist[2] == 'line'
-                exec ":edit +" . mlist[3] . " " . mlist[1]
-            else
-                exec ":edit +" . mlist[3] . "go " . mlist[1]
-            endif
-            return
-        endif
-        if foldlevel('.')
-            " With a fold just toggle visibility
-            normal za
-            return
-        endif
-        let item = matchstr( line, s:ctx.frame_def )
-        if item != ''
-            let item = substitute( item, '\s\|:', '', 'g' )
-            if search( '^Backtrace:', 'bnW' ) > 0
-                " Display item-th frame
-                call slimv#makeFold()
-                silent execute 'python swank_frame_locals("' . item . '")'
-                if slimv#getFiletype() != 'scheme' && g:slimv_impl != 'clisp'
-                    " Not implemented for CLISP or scheme
-                    silent execute 'python swank_frame_source_loc("' . item . '")'
-                endif
-                if slimv#getFiletype() == 'lisp' && g:slimv_impl != 'clisp' && g:slimv_impl != 'allegro' && g:slimv_impl != 'clojure'
-                    " Not implemented for CLISP or other lisp dialects
-                    " silent execute 'python swank_frame_call("' . item . '")'
-                endif
-                call slimv#repl#refresh()
-                return
-            endif
-            if search( '^Restarts:', 'bnW' ) > 0
-                " Apply item-th restart
-                call slimv#quitSldb()
-                silent execute 'python swank_invoke_restart("' . s:ctx.sldb_level . '", "' . item . '")'
-                call slimv#repl#refresh()
-                return
-            endif
-        endif
-    endif
-
-    " No special treatment, perform the original function
-    execute "normal! \<CR>"
 endfunction
 
 
