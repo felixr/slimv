@@ -67,6 +67,11 @@ function! slimv#buffer#open( name )
             stopinsert
         endif
     endif
+    if s:current_buf != bufnr( "%" )
+        " Keep track of the previous buffer and window
+        let b:previous_buf = s:ctx.current_buf
+        let b:previous_win = s:ctx.current_win
+    endif
     setlocal buftype=nofile
     setlocal noswapfile
     setlocal modifiable

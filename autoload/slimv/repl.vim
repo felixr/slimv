@@ -11,7 +11,10 @@ endfunction
 " Open a new REPL buffer
 function! slimv#repl#open()
     call slimv#buffer#open( g:slimv_repl_name )
-    call b:SlimvInitRepl()
+    setlocal noreadonly
+    let s:ctx.repl_buf = bufnr( "%" )
+    let b:slimv_repl_buffer = 1
+    call SlimvInitRepl()
     if g:slimv_repl_syntax
         call s:setSyntax()
     else
@@ -26,11 +29,11 @@ function! slimv#repl#open()
     endif
 
     " Add keybindings valid only for the REPL buffer
-    inoremap <buffer> <silent>        <C-CR> <End><C-O>:call slimv#repl#sendCommand(1)<CR>
+    inoremap <buffer> <silent>        <C-CR> <End><C-O>:call slimv#repl#sendCommand(1)<CR><End>
     inoremap <buffer> <silent>        <C-C>  <C-O>:call slimv#interrupt()<CR>
 
     if g:slimv_repl_simple_eval
-        inoremap <buffer> <silent>        <CR>     <C-R>=pumvisible() ? "\<lt>C-Y>"  : "\<lt>End>\<lt>C-O>:call slimv#repl#sendCommand(0)\<lt>CR>"<CR>
+        inoremap <buffer> <silent>        <CR>     <C-R>=pumvisible() ? "\<lt>C-Y>"  : "\<lt>End>\<lt>C-O>:call slimv#repl#sendCommand(0)\<lt>CR><lt>End>"<CR>
         inoremap <buffer> <silent>        <Up>     <C-R>=pumvisible() ? "\<lt>Up>"   : slimv#repl#handleUp()<CR>
         inoremap <buffer> <silent>        <Down>   <C-R>=pumvisible() ? "\<lt>Down>" : slimv#repl#handleDown()<CR>
     else
@@ -81,6 +84,8 @@ function! slimv#repl#open()
         execute "au FocusGained "      . g:slimv_repl_name . " :call slimv#repl#refresh()"
         execute "au BufEnter "         . g:slimv_repl_name . " :call slimv#repl#enter()" 
         execute "au BufLeave "         . g:slimv_repl_name . " :call slimv#repl#leave()" 
+        execute "au BufWinEnter "      . g:slimv_repl_name . " :call SlimvMarkBufferEnd(1)"
+        execute "au TabEnter *"        . " :call slimv#repl#setCursorPos(1)"
     augroup END
 
     call slimv#repl#refresh()
@@ -112,8 +117,8 @@ endfunction
 
 " Position the cursor at the end of the REPL buffer
 " Optionally mark this position in Vim mark 's'
-function! slimv#repl#moveToEnd()
-    if line( '.' ) >= b:repl_prompt_line - 1
+function! slimv#repl#moveToEnd(force)
+    if line( '.' ) >= b:repl_prompt_line - 1 || a:force
         " Go to the end of file only if the user did not move up from here
         call s:EndOfBuffer()
     endif
@@ -592,4 +597,17 @@ function! s:setCommandLine( cmd )
         call append( s:GetPromptLine(), lines[1:] )
     endif
     set nomodified
+endfunction
+
+" Refresh cursor position in the REPL buffer after new lines appended
+function! slimv#repl#setCursorPos( force )
+    " We do not want these autocommands to fire, the buffer switch will be temporary
+    let savemark = getpos("'`'")
+    let save_ei = &eventignore
+    set eventignore=BufEnter,BufLeave,BufWinEnter
+    let win = winnr()
+    windo call SlimvMarkBufferEnd( a:force )
+    execute win . "wincmd w"
+    let &eventignore = save_ei
+    call setpos("'`", savemark)
 endfunction

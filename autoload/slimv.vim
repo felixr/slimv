@@ -48,6 +48,7 @@ let s:ctx = {
     \'spec_indent': 'flet\|labels\|macrolet\|symbol-macrolet',
     \'spec_param': 'defmacro',
     \'binding_form': 'let\|let\*',
+    \'repl_buf': -1,
     \'win_id': 0 }
 
 function! slimv#context()
@@ -86,7 +87,7 @@ function! slimv#swankCommand()
         let g:slimv_lisp = input( 'Enter Lisp path (or fill g:slimv_lisp in your vimrc): ', '', 'file' )
     endif
 
-    let cmd = b:SlimvSwankLoader()
+    let cmd = SlimvSwankLoader()
     if cmd != ''
         if g:slimv_windows || g:slimv_cygwin
             return '!start /MIN ' . cmd
@@ -96,7 +97,8 @@ function! slimv#swankCommand()
                     let path2as = globpath( &runtimepath, 'ftplugin/**/iterm.applescript')
                     return '!' . path2as . ' ' . cmd
                 else
-                    return '!osascript -e "tell application \"Terminal\" to do script \"' . cmd . '\""'
+                    " doubles quotes within 'cmd' need to become '\\\"'
+                    return '!osascript -e "tell application \"Terminal\" to do script \"' . escape(escape(cmd, '"'), '\"') . '\""'
                 endif
         elseif $STY != ''
             " GNU screen under Linux
@@ -151,12 +153,14 @@ endfunction
 
 " Remember the end of the REPL buffer: user may enter commands here
 " Also remember the prompt, because the user may overwrite it
-function! slimv#markBufferEnd()
-    setlocal nomodified
-    call slimv#repl#moveToEnd()
-    let b:repl_prompt_line = line( '$' )
-    let b:repl_prompt_col = len( getline('$') ) + 1
-    let b:repl_prompt = getline( b:repl_prompt_line )
+function! slimv#markBufferEnd(force)
+    if exists( 'b:slimv_repl_buffer' )
+	setlocal nomodified
+	call slimv#repl#moveToEnd(a:force)
+	let b:repl_prompt_line = line( '$' )
+	let b:repl_prompt_col = len( getline('$') ) + 1
+	let b:repl_prompt = getline( b:repl_prompt_line )
+    endif
 endfunction
 
 
@@ -168,16 +172,27 @@ function! slimv#beginUpdate()
 endfunction
 
 " Switch to the buffer/window that was active before a swank action
-function! slimv#restoreFocus()
+function! slimv#restoreFocus( hide_current_buf )
+    if exists("b:previous_buf")
+        let new_buf = b:previous_buf
+        let new_win = b:previous_win
+    else
+        let new_buf = s:ctx.current_buf
+        let new_win = s:ctx.current_win
+    endif
     let buf = bufnr( "%" )
     let win = getwinvar( winnr(), 'id' )
-    if winnr('$') > 1 && s:ctx.current_win != '' && s:ctx.current_win != win
-        " Switch to the caller window
-        call slimv#SwitchToWindow( s:ctx.current_win )
+    if a:hide_current_buf
+        set nobuflisted
+        b #
     endif
-    if s:ctx.current_buf >= 0 && buf != s:ctx.current_buf
+    if winnr('$') > 1 && new_win != '' && new_win != win
+        " Switch to the caller window
+        call slimv#SwitchToWindow( new_win )
+    endif
+    if s:ctx.new_buf >= 0 && buf != s:ctx.new_buf
         " Switch to the caller buffer
-        execute "buf " . s:ctx.current_buf
+        execute "buf " . new_buf
     endif
 endfunction
 
@@ -188,6 +203,7 @@ endfunction
 
 " Handle response coming from the SWANK listener
 function! slimv#swankResponse()
+    let s:ctx.swank_ok_result = ''
     let s:ctx.refresh_disabled = 1
     silent execute 'python swank.output(1)'
     let s:ctx.refresh_disabled = 0
@@ -197,6 +213,14 @@ function! slimv#swankResponse()
 
     if s:ctx.swank_action == ':describe-symbol' && s:ctx.swank_result != ''
         echo substitute(s:ctx.swank_result,'^\n*','','')
+    elseif s:ctx.swank_ok_result != ''
+        " Display the :ok result also in status bar in case the REPL buffer is not shown
+        let s:ctx.swank_ok_result = substitute(s:ctx.swank_ok_result,"\<LF>",'','g')
+        if s:ctx.swank_ok_result == ''
+            call SlimvShortEcho( '=> OK' )
+        else
+            call SlimvShortEcho( '=> ' . s:swank_ok_result )
+        endif
     endif
     if s:ctx.swank_actions_pending
         let s:ctx.last_update = -1

@@ -1,6 +1,6 @@
 " slimv.vim:    The Superior Lisp Interaction Mode for VIM
-" Version:      0.9.12
-" Last Change:  15 Dec 2013
+" Version:      0.9.13
+" Last Change:  01 Dec 2014
 " Maintainer:   Tamas Kovacs <kovisoft at gmail dot com>
 " License:      This file is placed in the public domain.
 "               No warranty, express or implied.
@@ -72,10 +72,10 @@ endif
 if !exists( 'g:slimv_lisp' )
     let lisp = ['', '']
     if exists( 'g:slimv_preferred' )
-        let lisp = b:SlimvAutodetect( tolower(g:slimv_preferred) )
+        let lisp = SlimvAutodetect( tolower(g:slimv_preferred) )
     endif
     if lisp[0] == ''
-        let lisp = b:SlimvAutodetect( '' )
+        let lisp = SlimvAutodetect( '' )
     endif
     let g:slimv_lisp = lisp[0]
     if !exists( 'g:slimv_impl' )
@@ -86,7 +86,7 @@ endif
 " Try to find out the Lisp implementation
 " if not autodetected and not given in vimrc
 if !exists( 'g:slimv_impl' )
-    let g:slimv_impl = b:SlimvImplementation()
+    let g:slimv_impl = SlimvImplementation()
 endif
 
 " REPL buffer name
