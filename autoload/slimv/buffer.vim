@@ -45,6 +45,7 @@ endfunction
 
 " Open a buffer with the given name if not yet open, and switch to it
 function! slimv#buffer#open( name )
+    let ctx = slimv#context()
     let buf = bufnr( '^' . a:name . '$' )
     if buf == -1
         " Create a new buffer
@@ -67,10 +68,10 @@ function! slimv#buffer#open( name )
             stopinsert
         endif
     endif
-    if s:current_buf != bufnr( "%" )
+    if ctx.current_buf != bufnr( "%" )
         " Keep track of the previous buffer and window
-        let b:previous_buf = s:ctx.current_buf
-        let b:previous_win = s:ctx.current_win
+        let b:previous_buf = ctx.current_buf
+        let b:previous_win = ctx.current_win
     endif
     setlocal buftype=nofile
     setlocal noswapfile

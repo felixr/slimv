@@ -12,7 +12,8 @@ endfunction
 function! slimv#repl#open()
     call slimv#buffer#open( g:slimv_repl_name )
     setlocal noreadonly
-    let s:ctx.repl_buf = bufnr( "%" )
+    let ctx = slimv#context()
+    let ctx.repl_buf = bufnr( "%" )
     let b:slimv_repl_buffer = 1
     call SlimvInitRepl()
     if g:slimv_repl_syntax
@@ -160,7 +161,7 @@ function! slimv#repl#endUpdate()
     endif
 
     " Mark current prompt position
-    call slimv#markBufferEnd()
+    call slimv#markBufferEnd(0)
     let repl_buf = bufnr( '^' . g:slimv_repl_name . '$' )
     let repl_win = bufwinnr( repl_buf )
     let ctx = slimv#context()
@@ -360,8 +361,9 @@ function! slimv#repl#handleEnterRepl()
     let end = slimv#CloseForm( cmd )
     if end != 'ERROR' && end != ''
         " Command part before cursor is unbalanced, insert newline
-        let s:ctx.arglist_line = line('.')
-        let s:ctx.arglist_col = col('.')
+	let ctx = slimv#context()
+        let ctx.arglist_line = line('.')
+        let ctx.arglist_col = col('.')
         if pumvisible()
             " Pressing <CR> in a pop up selects entry.
             return "\<C-Y>"
@@ -507,7 +509,7 @@ function! slimv#repl#sendCommand( close )
     else
         call append( '$', "Slimv error: previous EOF mark not found, re-enter last form:" )
         call append( '$', "" )
-        call slimv#markBufferEnd()
+        call slimv#markBufferEnd(0)
     endif
 endfunction
 

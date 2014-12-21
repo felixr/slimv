@@ -121,11 +121,11 @@ endfunction
 function! SlimvSwankLoader()
     " First autodetect Leiningen and Cake
     if executable( 'lein' )
-        if globpath( '~/.lein/plugins', 'lein-ritz*.jar' ) != ''
-            return '"lein ritz ' . g:swank_port . '"'
-        else
-            return '"lein swank"'
-        endif
+        " if globpath( '~/.lein/plugins', 'lein-ritz*.jar' ) != ''
+        return '"lein ritz ' . g:swank_port . '"'
+        " else
+        " return '"lein swank"'
+        " endif
     elseif executable( 'cake' )
         return '"cake swank"'
     else
@@ -145,7 +145,7 @@ function! SlimvInitRepl()
 endfunction
 
 " Lookup symbol in the list of Clojure Hyperspec symbol databases
-function! SlimvHyperspecLookup( word, exact, all )
+function! b:SlimvHyperspecLookup( word, exact, all )
     if !exists( 'g:slimv_cljapi_loaded' )
         runtime ftplugin/**/slimv-cljapi.vim
     endif

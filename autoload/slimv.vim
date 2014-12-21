@@ -123,14 +123,14 @@ endfunction
 " =====================================================================
 
 " Display an error message
-function! slimv#error( msg )
+function! slimv#error(msg)
     echohl ErrorMsg
     echo a:msg
     echohl None
 endfunction
 
 " Display an error message and a question, return user response
-function! slimv#errorAsk( msg, question )
+function! slimv#errorAsk(msg, question)
     echohl ErrorMsg
     let answer = input( a:msg . a:question )
     echo ""
@@ -139,12 +139,12 @@ function! slimv#errorAsk( msg, question )
 endfunction
 
 " Display an error message and wait for ENTER
-function! slimv#errorWait( msg )
+function! slimv#errorWait(msg)
     call slimv#errorAsk( a:msg, " Press ENTER to continue." )
 endfunction
 
 " Shorten long messages to fit status line
-function! slimv#shortEcho( msg )
+function! slimv#shortEcho(msg)
     let saved=&shortmess
     set shortmess+=T
     exe "normal :echomsg a:msg\n"
@@ -172,7 +172,7 @@ function! slimv#beginUpdate()
 endfunction
 
 " Switch to the buffer/window that was active before a swank action
-function! slimv#restoreFocus( hide_current_buf )
+function! slimv#restoreFocus(hide_current_buf)
     if exists("b:previous_buf")
         let new_buf = b:previous_buf
         let new_win = b:previous_win
@@ -312,7 +312,7 @@ function slimv#endUpdate()
 endfunction
 "
 " Open SLDB buffer and place cursor on the given frame
-function slimv#gotoFrame( frame )
+function slimv#gotoFrame(frame)
     call slimv#debug#openSldb()
     let bcktrpos = search( '^Backtrace:', 'bcnw' )
     let line = getline( '.' )
@@ -344,7 +344,7 @@ function! slimv#selectSymbol()
         normal! h
     endif
     let symbol = expand('<cword>')
-    call winrestview( oldpos )
+    call winrestview(oldpos)
     return symbol
 endfunction
 
@@ -601,7 +601,7 @@ function! slimv#send( args, echoing, output )
         call append( '$', '' )
     endif
     if a:output
-        call slimv#markBufferEnd()
+        call slimv#markBufferEnd(0)
     endif
     call slimv#command( 'python swank_input("s:ctx.swank_form")' )
     let s:ctx.swank_package = ''
@@ -1711,7 +1711,7 @@ endfunction
 
 " Lookup current symbol in the Common Lisp Hyperspec
 function! slimv#hyperspec()
-    call slimv#lookup( slimv#selectSymbol() )
+    call slimv#lookup(slimv#selectSymbol())
 endfunction
 
 " Complete symbol name starting with 'base'
